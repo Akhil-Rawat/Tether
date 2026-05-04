@@ -1,0 +1,21 @@
+[workspace]
+members = ["programs/*"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+
+
+[profile.release]
+overflow-checks = true
+lto = true
+codegen-units = 16
+
+[profile.release-with-logs]
+inherits = "release"
+debug = true
+
+[patch.crates-io]
+anchor-syn = { path = "vendor/anchor-syn" }
+
