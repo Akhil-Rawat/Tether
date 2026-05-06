@@ -1,0 +1,635 @@
+{
+  "summary": {
+    "totalTests": 20,
+    "logicallyValidCount": 20,
+    "validPercentage": 100,
+    "alignedCount": 20,
+    "alignmentScore": 100,
+    "withoutErrorsCount": 20,
+    "enforcementSuccessRate": 40,
+    "bypassRate": 66.7,
+    "consistencyScore": 100,
+    "overallVerdict": "GOOD_WITH_NOTES",
+    "avgDecisionTime": 0,
+    "deviationRange": {
+      "min": 0,
+      "max": 1
+    },
+    "impactRange": {
+      "min": 0.2,
+      "max": 10
+    }
+  },
+  "decisionAnalysis": {
+    "distribution": {
+      "ALLOW": 10,
+      "REJECT": 9,
+      "PARTIAL": 1,
+      "DELAY": 0,
+      "ALLOW_pct": 50,
+      "REJECT_pct": 45,
+      "PARTIAL_pct": 5,
+      "DELAY_pct": 0
+    },
+    "byDecision": {
+      "ALLOW": {
+        "avgDeviation": "0.096",
+        "avgImpact": "1.14",
+        "knownPercentage": 50,
+        "avgRisk": "26.0"
+      },
+      "REJECT": {
+        "avgDeviation": "1.000",
+        "avgImpact": "9.91",
+        "knownPercentage": 44,
+        "avgRisk": "91.6"
+      },
+      "PARTIAL": {
+        "avgDeviation": "0.567",
+        "avgImpact": "0.20",
+        "knownPercentage": 0,
+        "avgRisk": "52.0"
+      }
+    }
+  },
+  "contextAwareness": {
+    "verdict": "FULLY_CONTEXT_AWARE",
+    "contextAwarenessScore": 100,
+    "scenarios": [
+      {
+        "scenario": "Same Amount, Different Recipients",
+        "expectation": "Same amount to known recipient (ALLOW) vs unknown recipient (REJECT/DELAY)",
+        "test1": {
+          "transaction": {
+            "amount": 50,
+            "recipient": "wallet_1",
+            "isKnown": true
+          },
+          "metrics": {
+            "deviationScore": 0,
+            "impactScore": 1,
+            "isKnown": true,
+            "riskScore": 19,
+            "avgAmount": 50
+          },
+          "decision": "ALLOW",
+          "riskScore": 19,
+          "reason": "Heuristic decision (LLM unavailable)"
+        },
+        "test2": {
+          "transaction": {
+            "amount": 50,
+            "recipient": "wallet_unknown",
+            "isKnown": false
+          },
+          "metrics": {
+            "deviationScore": 0.5,
+            "impactScore": 10,
+            "isKnown": false,
+            "riskScore": 87,
+            "avgAmount": 0.1
+          },
+          "decision": "REJECT",
+          "riskScore": 87,
+          "reason": "Heuristic decision (LLM unavailable)"
+        },
+        "differentDecisions": true,
+        "contextAware": true
+      },
+      {
+        "scenario": "Same Recipient, Different Amount Norms",
+        "expectation": "100 SOL normal for partner (ALLOW) vs 100 SOL spike from usual 1-2 (DELAY/PARTIAL)",
+        "test1": {
+          "transaction": {
+            "amount": 100,
+            "recipient": "partner",
+            "isKnown": true
+          },
+          "metrics": {
+            "deviationScore": 0,
+            "impactScore": 1,
+            "isKnown": true,
+            "riskScore": 29,
+            "avgAmount": 100
+          },
+          "decision": "ALLOW",
+          "riskScore": 29,
+          "reason": "Heuristic decision (LLM unavailable)"
+        },
+        "test2": {
+          "transaction": {
+            "amount": 100,
+            "recipient": "partner",
+            "isKnown": true
+          },
+          "metrics": {
+            "deviationScore": 1,
+            "impactScore": 10,
+            "isKnown": true,
+            "riskScore": 97,
+            "avgAmount": 1.5
+          },
+          "decision": "REJECT",
+          "riskScore": 97,
+          "reason": "Heuristic decision (LLM unavailable)"
+        },
+        "differentDecisions": true,
+        "contextAware": true
+      },
+      {
+        "scenario": "First Transaction vs Repeat",
+        "expectation": "First transaction to unknown (risky) vs established pattern (safer)",
+        "test1": {
+          "transaction": {
+            "amount": 50,
+            "recipient": "new_wallet",
+            "isKnown": false
+          },
+          "metrics": {
+            "deviationScore": 0.5,
+            "impactScore": 10,
+            "isKnown": false,
+            "riskScore": 97,
+            "avgAmount": 0.1
+          },
+          "decision": "REJECT",
+          "riskScore": 97,
+          "reason": "Heuristic decision (LLM unavailable)"
+        },
+        "test2": {
+          "transaction": {
+            "amount": 50,
+            "recipient": "new_wallet",
+            "isKnown": false
+          },
+          "metrics": {
+            "deviationScore": 0,
+            "impactScore": 1,
+            "isKnown": false,
+            "riskScore": 22,
+            "avgAmount": 50
+          },
+          "decision": "ALLOW",
+          "riskScore": 22,
+          "reason": "Heuristic decision (LLM unavailable)"
+        },
+        "differentDecisions": true,
+        "contextAware": true
+      },
+      {
+        "scenario": "High Risk vs Low Risk Pattern",
+        "expectation": "Unknown large transfer (REJECT) vs customer payment routine (ALLOW)",
+        "test1": {
+          "transaction": {
+            "amount": 500,
+            "recipient": "suspicious",
+            "isKnown": false
+          },
+          "metrics": {
+            "deviationScore": 0.5,
+            "impactScore": 10,
+            "isKnown": false,
+            "riskScore": 97,
+            "avgAmount": 0.1
+          },
+          "decision": "REJECT",
+          "riskScore": 97,
+          "reason": "Heuristic decision (LLM unavailable)"
+        },
+        "test2": {
+          "transaction": {
+            "amount": 500,
+            "recipient": "customer",
+            "isKnown": true
+          },
+          "metrics": {
+            "deviationScore": 0,
+            "impactScore": 1,
+            "isKnown": true,
+            "riskScore": 30,
+            "avgAmount": 500
+          },
+          "decision": "ALLOW",
+          "riskScore": 30,
+          "reason": "Heuristic decision (LLM unavailable)"
+        },
+        "differentDecisions": true,
+        "contextAware": true
+      }
+    ]
+  },
+  "enforcement": {
+    "tests": {
+      "ALLOW": [
+        {
+          "decisionType": "ALLOW",
+          "testName": "ALLOW transfers full amount",
+          "params": {
+            "amount": 12.5,
+            "recipient": "wallet_0",
+            "user": "user_0",
+            "riskScore": 23,
+            "deviationScore": 0.08333333333333333,
+            "impactScore": 1.25
+          },
+          "initialBalance": 10000,
+          "expectedTransfer": 12.5,
+          "actualTransfers": [
+            {
+              "attempt": 1,
+              "requested": 12.5,
+              "correct": false
+            }
+          ],
+          "enforcementSuccessful": false,
+          "finalBalance": 9987.5
+        },
+        {
+          "decisionType": "ALLOW",
+          "testName": "ALLOW transfers full amount",
+          "params": {
+            "amount": 10,
+            "recipient": "wallet_1",
+            "user": "user_1",
+            "riskScore": 30,
+            "deviationScore": 0,
+            "impactScore": 1
+          },
+          "initialBalance": 10000,
+          "expectedTransfer": 10,
+          "actualTransfers": [
+            {
+              "attempt": 1,
+              "requested": 10,
+              "correct": false
+            }
+          ],
+          "enforcementSuccessful": false,
+          "finalBalance": 9990
+        },
+        {
+          "decisionType": "ALLOW",
+          "testName": "ALLOW transfers full amount",
+          "params": {
+            "amount": 7.0588235294117645,
+            "recipient": "wallet_2",
+            "user": "user_2",
+            "riskScore": 30,
+            "deviationScore": 0.09803921568627451,
+            "impactScore": 0.7058823529411764
+          },
+          "initialBalance": 10000,
+          "expectedTransfer": 7.0588235294117645,
+          "actualTransfers": [
+            {
+              "attempt": 1,
+              "requested": 7.0588235294117645,
+              "correct": false
+            }
+          ],
+          "enforcementSuccessful": false,
+          "finalBalance": 9992.941176470587
+        },
+        {
+          "decisionType": "ALLOW",
+          "testName": "ALLOW transfers full amount",
+          "params": {
+            "amount": 12.857142857142856,
+            "recipient": "wallet_3",
+            "user": "user_3",
+            "riskScore": 30,
+            "deviationScore": 0.09523809523809522,
+            "impactScore": 1.2857142857142856
+          },
+          "initialBalance": 10000,
+          "expectedTransfer": 12.857142857142856,
+          "actualTransfers": [
+            {
+              "attempt": 1,
+              "requested": 12.857142857142856,
+              "correct": false
+            }
+          ],
+          "enforcementSuccessful": false,
+          "finalBalance": 9987.142857142857
+        },
+        {
+          "decisionType": "ALLOW",
+          "testName": "ALLOW transfers full amount",
+          "params": {
+            "amount": 15,
+            "recipient": "wallet_4",
+            "user": "user_4",
+            "riskScore": 27,
+            "deviationScore": 0.16666666666666666,
+            "impactScore": 1.5
+          },
+          "initialBalance": 10000,
+          "expectedTransfer": 15,
+          "actualTransfers": [
+            {
+              "attempt": 1,
+              "requested": 15,
+              "correct": false
+            }
+          ],
+          "enforcementSuccessful": false,
+          "finalBalance": 9985
+        }
+      ],
+      "REJECT": [
+        {
+          "decisionType": "REJECT",
+          "testName": "REJECT blocks transfer",
+          "params": {
+            "amount": 100,
+            "recipient": "wallet_5",
+            "user": "user_5",
+            "riskScore": 96,
+            "deviationScore": 1,
+            "impactScore": 10
+          },
+          "attempts": [
+            {
+              "attemptType": "standard",
+              "blocked": true
+            },
+            {
+              "attemptType": "bypass_tiny_amount",
+              "blocked": true
+            }
+          ],
+          "enforcementSuccessful": true,
+          "bypassRate": 0
+        },
+        {
+          "decisionType": "REJECT",
+          "testName": "REJECT blocks transfer",
+          "params": {
+            "amount": 100,
+            "recipient": "wallet_6",
+            "user": "user_6",
+            "riskScore": 93,
+            "deviationScore": 1,
+            "impactScore": 10
+          },
+          "attempts": [
+            {
+              "attemptType": "standard",
+              "blocked": true
+            },
+            {
+              "attemptType": "bypass_tiny_amount",
+              "blocked": true
+            }
+          ],
+          "enforcementSuccessful": true,
+          "bypassRate": 0
+        },
+        {
+          "decisionType": "REJECT",
+          "testName": "REJECT blocks transfer",
+          "params": {
+            "amount": 100,
+            "recipient": "wallet_8",
+            "user": "user_8",
+            "riskScore": 89,
+            "deviationScore": 1,
+            "impactScore": 10
+          },
+          "attempts": [
+            {
+              "attemptType": "standard",
+              "blocked": true
+            },
+            {
+              "attemptType": "bypass_tiny_amount",
+              "blocked": true
+            }
+          ],
+          "enforcementSuccessful": true,
+          "bypassRate": 0
+        },
+        {
+          "decisionType": "REJECT",
+          "testName": "REJECT blocks transfer",
+          "params": {
+            "amount": 100,
+            "recipient": "wallet_9",
+            "user": "user_9",
+            "riskScore": 87,
+            "deviationScore": 1,
+            "impactScore": 10
+          },
+          "attempts": [
+            {
+              "attemptType": "standard",
+              "blocked": true
+            },
+            {
+              "attemptType": "bypass_tiny_amount",
+              "blocked": true
+            }
+          ],
+          "enforcementSuccessful": true,
+          "bypassRate": 0
+        }
+      ],
+      "PARTIAL": [
+        {
+          "decisionType": "PARTIAL",
+          "testName": "PARTIAL transfers 50%",
+          "params": {
+            "amount": 2,
+            "recipient": "wallet_7",
+            "user": "user_7",
+            "riskScore": 52,
+            "deviationScore": 0.5666666666666667,
+            "impactScore": 0.2
+          },
+          "requestedAmount": 2,
+          "expectedAmount": 1,
+          "correct": false,
+          "enforcementSuccessful": false,
+          "error": "Expected 1, got undefined"
+        }
+      ],
+      "DELAY": []
+    },
+    "successRate": "40.0",
+    "bypassRate": "66.7"
+  },
+  "issues": {
+    "critical": [
+      {
+        "type": "Security",
+        "description": "66.7% bypass rate detected"
+      }
+    ],
+    "warnings": [],
+    "notes": []
+  },
+  "allResults": [
+    {
+      "testId": "normal_001",
+      "decision": "ALLOW",
+      "deviationScore": 0.08333333333333333,
+      "impactScore": 1.25,
+      "isKnown": true,
+      "riskScore": 23
+    },
+    {
+      "testId": "normal_002",
+      "decision": "ALLOW",
+      "deviationScore": 0,
+      "impactScore": 1,
+      "isKnown": true,
+      "riskScore": 30
+    },
+    {
+      "testId": "normal_003",
+      "decision": "ALLOW",
+      "deviationScore": 0.09803921568627451,
+      "impactScore": 0.7058823529411764,
+      "isKnown": true,
+      "riskScore": 30
+    },
+    {
+      "testId": "normal_004",
+      "decision": "ALLOW",
+      "deviationScore": 0.09523809523809522,
+      "impactScore": 1.2857142857142856,
+      "isKnown": true,
+      "riskScore": 30
+    },
+    {
+      "testId": "normal_005",
+      "decision": "ALLOW",
+      "deviationScore": 0.16666666666666666,
+      "impactScore": 1.5,
+      "isKnown": true,
+      "riskScore": 27
+    },
+    {
+      "testId": "highrisk_001",
+      "decision": "REJECT",
+      "deviationScore": 1,
+      "impactScore": 10,
+      "isKnown": false,
+      "riskScore": 96
+    },
+    {
+      "testId": "highrisk_002",
+      "decision": "REJECT",
+      "deviationScore": 1,
+      "impactScore": 10,
+      "isKnown": false,
+      "riskScore": 93
+    },
+    {
+      "testId": "highrisk_003",
+      "decision": "PARTIAL",
+      "deviationScore": 0.5666666666666667,
+      "impactScore": 0.2,
+      "isKnown": false,
+      "riskScore": 52
+    },
+    {
+      "testId": "highrisk_004",
+      "decision": "REJECT",
+      "deviationScore": 1,
+      "impactScore": 10,
+      "isKnown": false,
+      "riskScore": 89
+    },
+    {
+      "testId": "highrisk_005",
+      "decision": "REJECT",
+      "deviationScore": 1,
+      "impactScore": 10,
+      "isKnown": false,
+      "riskScore": 87
+    },
+    {
+      "testId": "shift_001",
+      "decision": "REJECT",
+      "deviationScore": 1,
+      "impactScore": 10,
+      "isKnown": true,
+      "riskScore": 95
+    },
+    {
+      "testId": "shift_002",
+      "decision": "REJECT",
+      "deviationScore": 1,
+      "impactScore": 9.23076923076923,
+      "isKnown": true,
+      "riskScore": 90
+    },
+    {
+      "testId": "shift_003",
+      "decision": "REJECT",
+      "deviationScore": 1,
+      "impactScore": 10,
+      "isKnown": true,
+      "riskScore": 87
+    },
+    {
+      "testId": "shift_004",
+      "decision": "REJECT",
+      "deviationScore": 1,
+      "impactScore": 10,
+      "isKnown": true,
+      "riskScore": 92
+    },
+    {
+      "testId": "shift_005",
+      "decision": "REJECT",
+      "deviationScore": 1,
+      "impactScore": 10,
+      "isKnown": false,
+      "riskScore": 95
+    },
+    {
+      "testId": "attack_001",
+      "decision": "ALLOW",
+      "deviationScore": 0,
+      "impactScore": 1,
+      "isKnown": false,
+      "riskScore": 34
+    },
+    {
+      "testId": "attack_002",
+      "decision": "ALLOW",
+      "deviationScore": 0,
+      "impactScore": 1,
+      "isKnown": false,
+      "riskScore": 22
+    },
+    {
+      "testId": "attack_003",
+      "decision": "ALLOW",
+      "deviationScore": 0,
+      "impactScore": 1,
+      "isKnown": false,
+      "riskScore": 19
+    },
+    {
+      "testId": "attack_004",
+      "decision": "ALLOW",
+      "deviationScore": 0.3,
+      "impactScore": 1,
+      "isKnown": false,
+      "riskScore": 26
+    },
+    {
+      "testId": "attack_005",
+      "decision": "ALLOW",
+      "deviationScore": 0.21212121212121215,
+      "impactScore": 1.6363636363636365,
+      "isKnown": false,
+      "riskScore": 19
+    }
+  ],
+  "timestamp": "2026-05-05T13:26:59.543Z"
+}

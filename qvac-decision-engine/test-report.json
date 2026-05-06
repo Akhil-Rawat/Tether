@@ -1,0 +1,727 @@
+{
+  "executionSummary": {
+    "totalTests": 64,
+    "passedTests": 13,
+    "failedTests": 51,
+    "passRate": "20.31",
+    "decisions": {
+      "ALLOW": 26,
+      "REJECT": 38,
+      "DELAY": 0,
+      "PARTIAL": 0
+    },
+    "decisionSuccess": {
+      "ALLOW": 13,
+      "REJECT": 0,
+      "DELAY": 0,
+      "PARTIAL": 0
+    },
+    "decisionSuccessRate": {
+      "ALLOW": 0.5,
+      "REJECT": 0,
+      "DELAY": 0,
+      "PARTIAL": 0
+    },
+    "averageRiskScore": 58.234375,
+    "medianRiskScore": 65,
+    "averageDeviationScore": 0.19130114037844553,
+    "medianDeviationScore": 0.2360215708762634,
+    "averageImpactScore": 5.361196875317726,
+    "blockedMaliciousTransactions": 0,
+    "anomaliesDetected": 51
+  },
+  "categoryBreakdown": {
+    "Normal Behavior": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "passRate": "100.00",
+      "decisions": {
+        "ALLOW": 5
+      },
+      "averageRiskScore": "8.60",
+      "averageDeviationScore": "0.054",
+      "averageImpactScore": "1.15"
+    },
+    "High Risk": {
+      "total": 10,
+      "passed": 0,
+      "failed": 10,
+      "passRate": "0.00",
+      "decisions": {
+        "REJECT": 10
+      },
+      "averageRiskScore": "93.00",
+      "averageDeviationScore": "0.245",
+      "averageImpactScore": "8.04"
+    },
+    "Behavior Shift": {
+      "total": 7,
+      "passed": 0,
+      "failed": 7,
+      "passRate": "0.00",
+      "decisions": {
+        "ALLOW": 5,
+        "REJECT": 2
+      },
+      "averageRiskScore": "50.00",
+      "averageDeviationScore": "0.233",
+      "averageImpactScore": "9.89"
+    },
+    "Repetitive Attack": {
+      "total": 7,
+      "passed": 0,
+      "failed": 7,
+      "passRate": "0.00",
+      "decisions": {
+        "REJECT": 7
+      },
+      "averageRiskScore": "65.00",
+      "averageDeviationScore": "0.142",
+      "averageImpactScore": "1.18"
+    },
+    "Edge Case": {
+      "total": 7,
+      "passed": 3,
+      "failed": 4,
+      "passRate": "42.86",
+      "decisions": {
+        "REJECT": 2,
+        "ALLOW": 5
+      },
+      "averageRiskScore": "36.57",
+      "averageDeviationScore": "0.255",
+      "averageImpactScore": "4.71"
+    },
+    "Adversarial": {
+      "total": 7,
+      "passed": 0,
+      "failed": 7,
+      "passRate": "0.00",
+      "decisions": {
+        "REJECT": 6,
+        "ALLOW": 1
+      },
+      "averageRiskScore": "75.43",
+      "averageDeviationScore": "0.213",
+      "averageImpactScore": "5.36"
+    },
+    "Context Dependent": {
+      "total": 10,
+      "passed": 4,
+      "failed": 6,
+      "passRate": "40.00",
+      "decisions": {
+        "ALLOW": 4,
+        "REJECT": 6
+      },
+      "averageRiskScore": "62.00",
+      "averageDeviationScore": "0.145",
+      "averageImpactScore": "6.40"
+    },
+    "Partial Approval": {
+      "total": 2,
+      "passed": 0,
+      "failed": 2,
+      "passRate": "0.00",
+      "decisions": {
+        "ALLOW": 1,
+        "REJECT": 1
+      },
+      "averageRiskScore": "59.00",
+      "averageDeviationScore": "0.253",
+      "averageImpactScore": "5.04"
+    },
+    "Rapid Transactions": {
+      "total": 4,
+      "passed": 0,
+      "failed": 4,
+      "passRate": "0.00",
+      "decisions": {
+        "REJECT": 4
+      },
+      "averageRiskScore": "74.50",
+      "averageDeviationScore": "0.115",
+      "averageImpactScore": "2.17"
+    },
+    "Precision": {
+      "total": 5,
+      "passed": 1,
+      "failed": 4,
+      "passRate": "20.00",
+      "decisions": {
+        "ALLOW": 5
+      },
+      "averageRiskScore": "25.80",
+      "averageDeviationScore": "0.242",
+      "averageImpactScore": "5.24"
+    }
+  },
+  "decisionStatistics": {
+    "ALLOW": {
+      "totalIssued": 26,
+      "successful": 13,
+      "successRate": "50.00",
+      "averageRiskScore": "18.96",
+      "averageDeviationScore": "0.160"
+    },
+    "REJECT": {
+      "totalIssued": 38,
+      "successful": 0,
+      "successRate": "0.00",
+      "averageRiskScore": "85.11",
+      "averageDeviationScore": "0.213"
+    }
+  },
+  "performanceMetrics": {
+    "averageExecutionTimeMs": "1.18",
+    "minExecutionTimeMs": 1,
+    "maxExecutionTimeMs": 2,
+    "medianExecutionTimeMs": "1.00",
+    "timeByDecision": {
+      "ALLOW": {
+        "count": 7,
+        "average": "1.29",
+        "min": 1,
+        "max": 2
+      },
+      "REJECT": {
+        "count": 4,
+        "average": "1.00",
+        "min": 1,
+        "max": 1
+      }
+    }
+  },
+  "contextAwareness": {
+    "contextTestCount": 10,
+    "groupedTransactions": 2,
+    "fullyContextAware": true,
+    "details": [
+      {
+        "transaction": "50_wallet_abc",
+        "testCount": 5,
+        "decisions": [
+          "ALLOW",
+          "REJECT",
+          "ALLOW",
+          "REJECT",
+          "REJECT"
+        ],
+        "differentDecisions": true
+      },
+      {
+        "transaction": "50_wallet_xyz",
+        "testCount": 5,
+        "decisions": [
+          "ALLOW",
+          "REJECT",
+          "ALLOW",
+          "REJECT",
+          "REJECT"
+        ],
+        "differentDecisions": true
+      }
+    ]
+  },
+  "nonBypassability": {
+    "totalREJECTs": 38,
+    "blockedREJECTs": 0,
+    "bypassRate": "0.00",
+    "nonBypassable": false
+  },
+  "anomalies": [
+    {
+      "testId": "highrisk_001",
+      "category": "High Risk",
+      "issues": [
+        "Low deviation (0.232) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "highrisk_002",
+      "category": "High Risk",
+      "issues": [
+        "Low deviation (0.261) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "highrisk_003",
+      "category": "High Risk",
+      "issues": [
+        "Low deviation (0.238) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "highrisk_004",
+      "category": "High Risk",
+      "issues": [
+        "Low deviation (0.229) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "highrisk_005",
+      "category": "High Risk",
+      "issues": [
+        "Risk score out of range: expected [70, 95], got 100",
+        "Low deviation (0.265) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "shift_001",
+      "category": "Behavior Shift",
+      "issues": [
+        "Decision mismatch: expected DELAY, got ALLOW",
+        "Risk score out of range: expected [60, 85], got 30"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 30
+    },
+    {
+      "testId": "shift_002",
+      "category": "Behavior Shift",
+      "issues": [
+        "Decision mismatch: expected DELAY, got ALLOW",
+        "Risk score out of range: expected [55, 80], got 30"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 30
+    },
+    {
+      "testId": "shift_003",
+      "category": "Behavior Shift",
+      "issues": [
+        "Decision mismatch: expected DELAY, got ALLOW",
+        "Risk score out of range: expected [60, 80], got 30"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 30
+    },
+    {
+      "testId": "shift_004",
+      "category": "Behavior Shift",
+      "issues": [
+        "Decision mismatch: expected REJECT, got ALLOW",
+        "Risk score out of range: expected [85, 100], got 30"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 30
+    },
+    {
+      "testId": "shift_005",
+      "category": "Behavior Shift",
+      "issues": [
+        "Risk score out of range: expected [75, 95], got 100",
+        "Low deviation (0.243) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "attack_001",
+      "category": "Repetitive Attack",
+      "issues": [
+        "Decision mismatch: expected PARTIAL, got REJECT",
+        "Low deviation (-0.000) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "attack_002",
+      "category": "Repetitive Attack",
+      "issues": [
+        "Decision mismatch: expected PARTIAL, got REJECT",
+        "Low deviation (0.000) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "attack_003",
+      "category": "Repetitive Attack",
+      "issues": [
+        "Decision mismatch: expected PARTIAL, got REJECT",
+        "Low deviation (-0.000) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "attack_004",
+      "category": "Repetitive Attack",
+      "issues": [
+        "Risk score out of range: expected [70, 95], got 65",
+        "Low deviation (0.252) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "attack_005",
+      "category": "Repetitive Attack",
+      "issues": [
+        "Risk score out of range: expected [75, 95], got 65",
+        "Low deviation (0.244) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "edge_001",
+      "category": "Edge Case",
+      "issues": [
+        "Decision mismatch: expected PARTIAL, got REJECT",
+        "Risk score out of range: expected [40, 70], got 100"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "edge_003",
+      "category": "Edge Case",
+      "issues": [
+        "Decision mismatch: expected REJECT, got ALLOW",
+        "Risk score out of range: expected [90, 100], got 30"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 30
+    },
+    {
+      "testId": "edge_005",
+      "category": "Edge Case",
+      "issues": [
+        "Decision mismatch: expected PARTIAL, got REJECT",
+        "Low deviation (0.246) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "adv_001",
+      "category": "Adversarial",
+      "issues": [
+        "Decision mismatch: expected PARTIAL, got REJECT",
+        "Low deviation (0.249) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "adv_002",
+      "category": "Adversarial",
+      "issues": [
+        "Decision mismatch: expected PARTIAL, got REJECT",
+        "Low deviation (0.000) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "adv_003",
+      "category": "Adversarial",
+      "issues": [
+        "Decision mismatch: expected DELAY, got ALLOW",
+        "Risk score out of range: expected [55, 80], got 30"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 30
+    },
+    {
+      "testId": "adv_004",
+      "category": "Adversarial",
+      "issues": [
+        "Low deviation (0.269) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "adv_005",
+      "category": "Adversarial",
+      "issues": [
+        "Low deviation (0.229) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 84
+    },
+    {
+      "testId": "context_002",
+      "category": "Context Dependent",
+      "issues": [
+        "Low deviation (0.235) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "context_004",
+      "category": "Context Dependent",
+      "issues": [
+        "Low deviation (0.249) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "partial_001",
+      "category": "Partial Approval",
+      "issues": [
+        "Decision mismatch: expected PARTIAL, got ALLOW",
+        "Risk score out of range: expected [45, 65], got 30"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 30
+    },
+    {
+      "testId": "partial_002",
+      "category": "Partial Approval",
+      "issues": [
+        "Decision mismatch: expected PARTIAL, got REJECT",
+        "Risk score out of range: expected [50, 70], got 88",
+        "Low deviation (0.258) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 88
+    },
+    {
+      "testId": "rapid_001",
+      "category": "Rapid Transactions",
+      "issues": [
+        "Risk score out of range: expected [70, 95], got 65",
+        "Low deviation (-0.000) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "rapid_002",
+      "category": "Rapid Transactions",
+      "issues": [
+        "Low deviation (0.230) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 84
+    },
+    {
+      "testId": "precision_002",
+      "category": "Precision",
+      "issues": [
+        "Decision mismatch: expected DELAY, got ALLOW",
+        "Risk score out of range: expected [55, 80], got 23"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 23
+    },
+    {
+      "testId": "precision_003",
+      "category": "Precision",
+      "issues": [
+        "Decision mismatch: expected DELAY, got ALLOW",
+        "Risk score out of range: expected [60, 85], got 26"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 26
+    },
+    {
+      "testId": "precision_004",
+      "category": "Precision",
+      "issues": [
+        "Decision mismatch: expected REJECT, got ALLOW",
+        "Risk score out of range: expected [80, 100], got 30"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 30
+    },
+    {
+      "testId": "context_002",
+      "category": "Context Dependent",
+      "issues": [
+        "Low deviation (0.235) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "context_004",
+      "category": "Context Dependent",
+      "issues": [
+        "Low deviation (0.249) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "highrisk_001",
+      "category": "High Risk",
+      "issues": [
+        "Low deviation (0.232) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "highrisk_002",
+      "category": "High Risk",
+      "issues": [
+        "Low deviation (0.261) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "highrisk_003",
+      "category": "High Risk",
+      "issues": [
+        "Low deviation (0.238) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "highrisk_004",
+      "category": "High Risk",
+      "issues": [
+        "Low deviation (0.229) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "highrisk_005",
+      "category": "High Risk",
+      "issues": [
+        "Risk score out of range: expected [70, 95], got 100",
+        "Low deviation (0.265) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "shift_004",
+      "category": "Behavior Shift",
+      "issues": [
+        "Decision mismatch: expected REJECT, got ALLOW",
+        "Risk score out of range: expected [85, 100], got 30"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 30
+    },
+    {
+      "testId": "shift_005",
+      "category": "Behavior Shift",
+      "issues": [
+        "Risk score out of range: expected [75, 95], got 100",
+        "Low deviation (0.243) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "attack_004",
+      "category": "Repetitive Attack",
+      "issues": [
+        "Risk score out of range: expected [70, 95], got 65",
+        "Low deviation (0.252) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "attack_005",
+      "category": "Repetitive Attack",
+      "issues": [
+        "Risk score out of range: expected [75, 95], got 65",
+        "Low deviation (0.244) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "edge_003",
+      "category": "Edge Case",
+      "issues": [
+        "Decision mismatch: expected REJECT, got ALLOW",
+        "Risk score out of range: expected [90, 100], got 30"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 30
+    },
+    {
+      "testId": "adv_004",
+      "category": "Adversarial",
+      "issues": [
+        "Low deviation (0.269) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "adv_005",
+      "category": "Adversarial",
+      "issues": [
+        "Low deviation (0.229) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 84
+    },
+    {
+      "testId": "context_002",
+      "category": "Context Dependent",
+      "issues": [
+        "Low deviation (0.235) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "context_004",
+      "category": "Context Dependent",
+      "issues": [
+        "Low deviation (0.249) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 100
+    },
+    {
+      "testId": "rapid_001",
+      "category": "Rapid Transactions",
+      "issues": [
+        "Risk score out of range: expected [70, 95], got 65",
+        "Low deviation (-0.000) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 65
+    },
+    {
+      "testId": "rapid_002",
+      "category": "Rapid Transactions",
+      "issues": [
+        "Low deviation (0.230) but REJECT decision"
+      ],
+      "decision": "REJECT",
+      "riskScore": 84
+    },
+    {
+      "testId": "precision_004",
+      "category": "Precision",
+      "issues": [
+        "Decision mismatch: expected REJECT, got ALLOW",
+        "Risk score out of range: expected [80, 100], got 30"
+      ],
+      "decision": "ALLOW",
+      "riskScore": 30
+    }
+  ],
+  "timestamp": "2026-05-05T11:05:23.476Z"
+}
