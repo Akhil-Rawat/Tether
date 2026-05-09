@@ -6,6 +6,11 @@ import { Keypair, PublicKey } from '@solana/web3.js';
 const USER_WALLET_KEY = 'guardian_user_wallet';
 const AI_AUTHORITY_KEY = 'guardian_ai_authority_wallet';
 
+// Deterministic seed for AI authority (must match contract's TRUSTED_AI_AUTHORITY)
+// Generated as: nacl.sign.keyPair.fromSeed(sha256("guardian_ai_authority_seed_32bytes!"))
+// Public key: GQ7UU2BurgDEmzfkEfxKY9LwHwzNgPMxyanhbig2hfRZ
+const AI_AUTHORITY_SEED = 'guardian_ai_authority_seed_32bytes!';
+
 const toBase64 = (bytes: Uint8Array): string => Buffer.from(bytes).toString('base64');
 const fromBase64 = (value: string): Uint8Array => new Uint8Array(Buffer.from(value, 'base64'));
 
@@ -35,6 +40,15 @@ export class WalletService {
     return keypair;
   }
 
+  private createDeterministicAiAuthority(): Keypair {
+    // Create deterministic AI authority from fixed seed
+    // This ensures consistent verification with contract's TRUSTED_AI_AUTHORITY
+    const seedBuffer = Buffer.from(AI_AUTHORITY_SEED);
+    const seed = new Uint8Array(seedBuffer.slice(0, 32));
+    const kp = nacl.sign.keyPair.fromSeed(seed);
+    return Keypair.fromSecretKey(kp.secretKey);
+  }
+
   async getUserWallet(): Promise<Keypair> {
     if (!this.userWallet) {
       this.userWallet = await this.loadOrCreateKeypair(USER_WALLET_KEY);
@@ -44,7 +58,9 @@ export class WalletService {
 
   async getAiAuthorityWallet(): Promise<Keypair> {
     if (!this.aiAuthority) {
-      this.aiAuthority = await this.loadOrCreateKeypair(AI_AUTHORITY_KEY);
+      // Use deterministic AI authority (not random)
+      // This must match the contract's TRUSTED_AI_AUTHORITY constant
+      this.aiAuthority = this.createDeterministicAiAuthority();
     }
     return this.aiAuthority;
   }

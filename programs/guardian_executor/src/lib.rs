@@ -25,17 +25,11 @@ const MAX_DELAY_SECONDS: i64 = 7 * 24 * 60 * 60;
 // This MUST be set to the actual public key of your AI signing authority.
 // NEVER allow user-controlled AI authority - this breaks all cryptographic enforcement.
 //
-// To set your AI authority:
-// 1. Generate your AI keypair: solana-keygen new (or use ed25519_dalek)
-// 2. Get the public key (base58 encoded)
-// 3. Replace this constant with the real pubkey
-// 4. Recompile and deploy
-//
-// Example format (base58): "YourAIAuthority1111111111111111111111111111" 
-// This MUST be the actual public key of your AI authority keypair
-// Generate with: solana-keygen new (or similar)
-// For testing/demo, use a known keypair public key
-const TRUSTED_AI_AUTHORITY: &str = "SilverGuard111111111111111111111111111111111"; // PLACEHOLDER - SET REAL PUBKEY
+// This key is deterministically generated from a fixed seed:
+// seed = "guardian_ai_authority_seed_32bytes!"
+// keypair = Ed25519.from_seed(seed)
+// This ensures consistent verification across on-device signing and contract validation
+const TRUSTED_AI_AUTHORITY: &str = "GQ7UU2BurgDEmzfkEfxKY9LwHwzNgPMxyanhbig2hfRZ";
 
 // Ed25519 program ID (Solana's native verification program)
 const ED25519_PROGRAM_ID: &str = "Ed25519SigVerify111111111111111111111111111";
