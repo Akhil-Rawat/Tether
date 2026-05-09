@@ -13,10 +13,11 @@ import {
   Platform,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { SafeAreaWrapper, Card, Button } from '../components';
+import { SafeAreaWrapper, Card, Button, LoadingOverlay } from '../components';
 import { useTransactionStore } from '../store/transactionStore';
 import { Colors, Typography, Spacing, BorderRadius } from '../themes';
 import type { RootStackParamList } from '../types';
+import { isValidSolanaAddress } from '../utils';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Send'>;
 
@@ -29,12 +30,9 @@ export const SendScreen: React.FC<Props> = ({ navigation }) => {
   const startNewTransaction = useTransactionStore(
     (state) => state.startNewTransaction
   );
-  const analyzeTransaction = useTransactionStore(
-    (state) => state.analyzeTransaction
-  );
-  const currentTransaction = useTransactionStore(
-    (state) => state.currentTransaction
-  );
+  const analyzeCurrentTransaction = useTransactionStore((s) => s.analyzeCurrentTransaction);
+  const isAnalyzing = useTransactionStore((s) => s.isAnalyzing);
+  const blockchainError = useTransactionStore((s) => s.blockchainError);
 
   const handleSend = async () => {
     setError('');
@@ -42,6 +40,11 @@ export const SendScreen: React.FC<Props> = ({ navigation }) => {
     // Validation
     if (!recipient.trim()) {
       setError('Please enter a recipient address');
+      return;
+    }
+
+    if (!isValidSolanaAddress(recipient.trim())) {
+      setError('Please enter a valid Solana address');
       return;
     }
 
@@ -59,19 +62,20 @@ export const SendScreen: React.FC<Props> = ({ navigation }) => {
     setLoading(true);
 
     try {
-      // Create new transaction
+      // Create new transaction and run live analysis
       startNewTransaction(recipient, amountNum);
 
-      // Wait a moment for state to update, then get the transaction
-      setTimeout(async () => {
-        const tx = useTransactionStore.getState().currentTransaction;
-        if (tx) {
-          // Analyze it
-          await analyzeTransaction(tx);
-          // Navigate to analysis screen
-          navigation.navigate('Analysis', { transactionId: tx.id });
-        }
-      }, 100);
+      const analysis = await analyzeCurrentTransaction();
+
+      setLoading(false);
+
+      if (!analysis) {
+        setError(blockchainError ?? 'Analysis failed');
+        return;
+      }
+
+      // Navigate to analysis screen where the real decision is shown
+      navigation.navigate('Analysis', { transactionId: analysis.transactionId });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error creating transaction');
       setLoading(false);
@@ -155,14 +159,16 @@ export const SendScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Send Button */}
         <Button
-          title={loading ? 'Processing...' : 'Review & Send'}
+          title={loading || isAnalyzing ? 'Analyzing...' : 'Review & Send'}
           variant="primary"
           size="lg"
-          loading={loading}
-          disabled={loading}
+          loading={loading || isAnalyzing}
+          disabled={loading || isAnalyzing}
           onPress={handleSend}
           style={styles.sendButton}
         />
+
+        <LoadingOverlay visible={loading || isAnalyzing} title="Analyzing transaction" subtitle="Guardian is evaluating risk on Devnet" />
       </SafeAreaWrapper>
     </KeyboardAvoidingView>
   );

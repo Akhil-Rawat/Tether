@@ -96,4 +96,9 @@ export type RootStackParamList = {
   Analysis: { transactionId: string };
   Delay: { analysisId: string };
   PartialApproval: { analysisId: string };
+  Success: {
+    transactionSignature?: string;
+    explorerUrl?: string;
+    decisionHash?: string;
+  };
 };

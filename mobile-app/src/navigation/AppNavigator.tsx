@@ -14,6 +14,7 @@ import { SendScreen } from '../screens/SendScreen';
 import { AnalysisScreen } from '../screens/AnalysisScreen';
 import { DelayScreen } from '../screens/DelayScreen';
 import { PartialApprovalScreen } from '../screens/PartialApprovalScreen';
+import { TransactionSuccessScreen } from '../screens/TransactionSuccessScreen';
 
 // Types
 import type { RootStackParamList } from '../types';
@@ -76,6 +77,14 @@ export const AppNavigator: React.FC = () => {
           options={{
             title: 'Partial Approval',
             presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="Success"
+          component={TransactionSuccessScreen}
+          options={{
+            title: 'Execution Complete',
+            presentation: 'modal',
           }}
         />
       </Stack.Navigator>

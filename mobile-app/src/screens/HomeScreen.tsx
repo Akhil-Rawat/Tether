@@ -129,7 +129,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                         { color: Colors.textPrimary },
                       ]}
                     >
-                      {item.transaction.amount} SOL
+                      {item.transaction.amountSol} SOL
                     </Text>
                     <Text
                       style={[Typography.caption, { color: Colors.textSecondary }]}

@@ -22,7 +22,7 @@ import {
   SYSVAR_INSTRUCTIONS_PUBKEY,
   Ed25519Program,
 } from "@solana/web3.js";
-import { createHash } from "crypto";
+import { sha256 } from "@noble/hashes/sha256";
 import * as nacl from "tweetnacl";
 
 // ============================================================================
@@ -75,32 +75,36 @@ const ED25519_PROGRAM_ID = new PublicKey(
  * https://github.com/your-repo/programs/guardian_executor/src/lib.rs#compute_decision_hash
  */
 export function computeDecisionHash(decisionData: DecisionPackage): Buffer {
-  const hash = createHash("sha256");
-
   // 1. Decision (u8, 1 byte)
   const decisionBuf = Buffer.alloc(1);
   decisionBuf.writeUInt8(decisionData.decision, 0);
-  hash.update(decisionBuf);
 
   // 2. Amount (u64, 8 bytes, little-endian)
   const amountBuf = Buffer.alloc(8);
   amountBuf.writeBigUInt64LE(decisionData.amount, 0);
-  hash.update(amountBuf);
 
   // 3. Recipient (32-byte public key)
-  hash.update(decisionData.recipient.toBuffer());
+  const recipientBuf = decisionData.recipient.toBuffer();
 
   // 4. Nonce (u64, 8 bytes, little-endian)
   const nonceBuf = Buffer.alloc(8);
   nonceBuf.writeBigUInt64LE(decisionData.nonce, 0);
-  hash.update(nonceBuf);
 
   // 5. Expiry timestamp (i64, 8 bytes, little-endian)
   const expiryBuf = Buffer.alloc(8);
   expiryBuf.writeBigInt64LE(BigInt(decisionData.expiry_timestamp), 0);
-  hash.update(expiryBuf);
 
-  return hash.digest();
+  return Buffer.from(
+    sha256(
+      new Uint8Array([
+        ...decisionBuf,
+        ...amountBuf,
+        ...recipientBuf,
+        ...nonceBuf,
+        ...expiryBuf,
+      ])
+    )
+  );
 }
 
 /**

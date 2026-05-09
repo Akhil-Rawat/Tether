@@ -1,169 +1,169 @@
 /**
  * AnalysisScreen
- * Hero screen displaying AI analysis and decision
- * Shows decision, risk scores, confidence, reasoning, etc.
+ * Hero screen displaying live Guardian analysis and decision
  */
 
-import React, { useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { SafeAreaWrapper, Card, Button, ScoreBar, DecisionBadge } from '../components';
+import { SafeAreaWrapper, Card, Button, ScoreBar, DecisionBadge, LoadingOverlay } from '../components';
 import { useTransactionStore } from '../store/transactionStore';
-import { DecisionExplanations } from '../mocks/analysisData';
-import { Colors, Typography, Spacing, BorderRadius } from '../themes';
-import type { RootStackParamList, DecisionType } from '../types';
+import { Colors, Typography, Spacing } from '../themes';
+import type { RootStackParamList } from '../types';
+import { DecisionType } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Analysis'>;
 
+const decisionTitles: Record<DecisionType, string> = {
+  [DecisionType.ALLOW]: 'Transaction Approved',
+  [DecisionType.REJECT]: 'Transaction Blocked',
+  [DecisionType.DELAY]: 'Delayed Execution',
+  [DecisionType.PARTIAL]: 'Partial Approval',
+};
+
 export const AnalysisScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { transactionId } = route.params;
-  const isLoading = useTransactionStore((state) => state.isLoading);
+  const currentTransaction = useTransactionStore((state) => state.currentTransaction);
   const currentAnalysis = useTransactionStore((state) => state.currentAnalysis);
+  const blockchainError = useTransactionStore((state) => state.blockchainError);
+  const isAnalyzing = useTransactionStore((state) => state.isAnalyzing);
+  const isExecuting = useTransactionStore((state) => state.isExecuting);
+  const analyzeCurrentTransaction = useTransactionStore((state) => state.analyzeCurrentTransaction);
+  const executeCurrentTransaction = useTransactionStore((state) => state.executeCurrentTransaction);
+  const confirmationStatus = useTransactionStore((state) => state.confirmationStatus);
 
-  // Get explanation for current decision
-  const explanation = useMemo(() => {
-    if (!currentAnalysis) return '';
-    return DecisionExplanations[currentAnalysis.decision as DecisionType];
-  }, [currentAnalysis]);
+  useEffect(() => {
+    if (!currentAnalysis && currentTransaction && !isAnalyzing) {
+      void analyzeCurrentTransaction();
+    }
+  }, [analyzeCurrentTransaction, currentAnalysis, currentTransaction, isAnalyzing, route.params.transactionId]);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (confirmationStatus === 'confirmed') {
+      navigation.replace('Success', {
+        transactionSignature: useTransactionStore.getState().transactionSignature ?? undefined,
+        explorerUrl: useTransactionStore.getState().explorerUrl ?? undefined,
+        decisionHash: useTransactionStore.getState().decisionHash ?? undefined,
+      });
+    }
+  }, [confirmationStatus, navigation]);
+
+  if (isAnalyzing || !currentAnalysis) {
     return (
       <SafeAreaWrapper>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text
-            style={[
-              Typography.body,
-              { color: Colors.textSecondary, marginTop: Spacing.lg },
-            ]}
-          >
-            Analyzing your transaction...
+          <Text style={[Typography.body, styles.loadingText]}>
+            Guardian is analyzing your transaction using live devnet state...
           </Text>
         </View>
+        <LoadingOverlay
+          visible={isExecuting}
+          title="Submitting to Devnet"
+          subtitle="Building the signed Guardian transaction"
+        />
       </SafeAreaWrapper>
     );
   }
 
-  if (!currentAnalysis) {
-    return (
-      <SafeAreaWrapper>
-        <View style={styles.errorContainer}>
-          <Text
-            style={[
-              Typography.body,
-              { color: Colors.error, textAlign: 'center' },
-            ]}
-          >
-            No analysis available
-          </Text>
-          <Button
-            title="Go Back"
-            variant="secondary"
-            onPress={() => navigation.goBack()}
-            style={{ marginTop: Spacing.lg }}
-          />
-        </View>
-      </SafeAreaWrapper>
-    );
-  }
+  const { decision, scores, reasoning, riskFactors, behaviorAnalysis, recommendedAction, decisionHash } = currentAnalysis;
+  const transactionSignature = useTransactionStore((s) => s.transactionSignature);
+  const explorerUrl = useTransactionStore((s) => s.explorerUrl);
 
-  const { transaction, decision, scores, reasoning, riskFactors, behaviorAnalysis } =
-    currentAnalysis;
+  const handleImmediateExecute = async () => {
+    const result = await executeCurrentTransaction();
+    if (result?.success && result.transactionSignature) {
+      navigation.replace('Success', {
+        transactionSignature: result.transactionSignature,
+        explorerUrl: result.explorerUrl,
+        decisionHash: result.decisionHash,
+      });
+    }
+  };
 
   const handleDecisionAction = () => {
-    if (decision === 'DELAY') {
+    if (decision === DecisionType.DELAY) {
       navigation.navigate('Delay', { analysisId: currentAnalysis.id });
-    } else if (decision === 'PARTIAL') {
-      navigation.navigate('PartialApproval', { analysisId: currentAnalysis.id });
-    } else {
-      // For ALLOW/REJECT, go back or show confirmation
-      navigation.navigate('Home');
+      return;
     }
+
+    if (decision === DecisionType.PARTIAL) {
+      navigation.navigate('PartialApproval', { analysisId: currentAnalysis.id });
+      return;
+    }
+
+    if (decision === DecisionType.ALLOW) {
+      void handleImmediateExecute();
+      return;
+    }
+
+    navigation.navigate('Home');
   };
 
   return (
     <SafeAreaWrapper scroll>
-      {/* Decision Badge - Hero Element */}
+      <LoadingOverlay
+        visible={isExecuting}
+        title="Sending to Devnet"
+        subtitle="Guardian is building and submitting the real signed transaction"
+      />
+
       <View style={styles.badgeContainer}>
         <DecisionBadge decision={decision} size="lg" />
       </View>
 
-      {/* Decision Title & Explanation */}
       <View style={styles.titleContainer}>
         <Text style={[Typography.h2, { color: Colors.textPrimary, textAlign: 'center' }]}>
-          {decision === 'ALLOW' && 'Transaction Approved'}
-          {decision === 'REJECT' && 'Transaction Blocked'}
-          {decision === 'DELAY' && 'Delayed Execution'}
-          {decision === 'PARTIAL' && 'Partial Approval'}
+          {decisionTitles[decision]}
         </Text>
-        <Text style={[Typography.body, { color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.md }]}>
-          {explanation}
+        <Text
+          style={[
+            Typography.body,
+            { color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.md },
+          ]}
+        >
+          {recommendedAction}
         </Text>
+        {decisionHash ? (
+          <Text style={[Typography.caption, { color: Colors.textTertiary, textAlign: 'center', marginTop: Spacing.sm }]}>Decision Hash: {decisionHash}</Text>
+        ) : null}
+        {transactionSignature ? (
+          <Text style={[Typography.caption, { color: Colors.textTertiary, textAlign: 'center', marginTop: Spacing.sm }]}>Tx: {transactionSignature}</Text>
+        ) : null}
       </View>
 
-      {/* Transaction Summary */}
       <Card variant="elevated" style={styles.summaryCard}>
         <View style={styles.summaryRow}>
-          <Text style={[Typography.caption, { color: Colors.textSecondary }]}>
-            AMOUNT
-          </Text>
+          <Text style={[Typography.caption, { color: Colors.textSecondary }]}>AMOUNT</Text>
           <Text style={[Typography.bodyStrong, { color: Colors.textPrimary }]}>
-            {transaction.amount} SOL
+            {currentAnalysis.transaction.amountSol} SOL
           </Text>
         </View>
         <View style={[styles.summaryRow, { marginTop: Spacing.md }]}>
-          <Text style={[Typography.caption, { color: Colors.textSecondary }]}>
-            RECIPIENT
+          <Text style={[Typography.caption, { color: Colors.textSecondary }]}>RECIPIENT</Text>
+          <Text style={[Typography.caption, styles.monospace]} numberOfLines={1}>
+            {currentAnalysis.transaction.recipient}
           </Text>
-          <Text
-            style={[Typography.caption, { color: Colors.textPrimary, fontFamily: 'Menlo' }]}
-            numberOfLines={1}
-          >
-            {transaction.recipient}
+        </View>
+        <View style={[styles.summaryRow, { marginTop: Spacing.md }]}>
+          <Text style={[Typography.caption, { color: Colors.textSecondary }]}>BALANCE</Text>
+          <Text style={[Typography.caption, { color: Colors.textPrimary }]}>
+            {(Number(currentAnalysis.balanceLamports) / 1_000_000_000).toFixed(4)} SOL
           </Text>
         </View>
       </Card>
 
-      {/* Score Breakdown - The Key Metrics */}
       <View style={styles.scoresSection}>
-        <Text style={[Typography.bodyStrong, { color: Colors.textPrimary, marginBottom: Spacing.lg }]}>
-          Analysis Scores
-        </Text>
+        <Text style={[Typography.bodyStrong, { color: Colors.textPrimary, marginBottom: Spacing.lg }]}>Analysis Scores</Text>
         <Card variant="surface">
-          <ScoreBar
-            label="Confidence"
-            value={scores.confidence}
-            color={Colors.primary}
-          />
-          <ScoreBar
-            label="Risk Score"
-            value={scores.riskScore}
-            color={undefined} // Auto-color based on value
-          />
-          <ScoreBar
-            label="Deviation"
-            value={scores.deviationScore}
-            color={undefined}
-          />
-          <ScoreBar
-            label="Impact"
-            value={scores.impactScore}
-            color={undefined}
-          />
+          <ScoreBar label="Confidence" value={scores.confidence} color={Colors.primary} />
+          <ScoreBar label="Risk Score" value={scores.riskScore} />
+          <ScoreBar label="Deviation" value={scores.deviationScore} />
+          <ScoreBar label="Impact" value={scores.impactScore} />
         </Card>
       </View>
 
-      {/* AI Reasoning */}
       <View style={styles.reasoningSection}>
-        <Text style={[Typography.bodyStrong, { color: Colors.textPrimary, marginBottom: Spacing.md }]}>
-          AI Reasoning
-        </Text>
+        <Text style={[Typography.bodyStrong, { color: Colors.textPrimary, marginBottom: Spacing.md }]}>AI Reasoning</Text>
         <Card variant="surface">
           <Text style={[Typography.body, { color: Colors.textSecondary, lineHeight: 22 }]}>
             {reasoning}
@@ -171,29 +171,21 @@ export const AnalysisScreen: React.FC<Props> = ({ navigation, route }) => {
         </Card>
       </View>
 
-      {/* Risk Factors */}
       {riskFactors.length > 0 && (
         <View style={styles.riskSection}>
-          <Text style={[Typography.bodyStrong, { color: Colors.textPrimary, marginBottom: Spacing.md }]}>
-            Risk Factors
-          </Text>
+          <Text style={[Typography.bodyStrong, { color: Colors.textPrimary, marginBottom: Spacing.md }]}>Risk Factors</Text>
           <Card variant="surface">
-            {riskFactors.map((factor, index) => (
-              <View key={index} style={styles.riskFactor}>
-                <Text style={[Typography.body, { color: Colors.warning }]}>
-                  • {factor}
-                </Text>
+            {riskFactors.map((factor) => (
+              <View key={factor} style={styles.riskFactor}>
+                <Text style={[Typography.body, { color: Colors.warning }]}>• {factor}</Text>
               </View>
             ))}
           </Card>
         </View>
       )}
 
-      {/* Behavior Analysis */}
       <View style={styles.behaviorSection}>
-        <Text style={[Typography.bodyStrong, { color: Colors.textPrimary, marginBottom: Spacing.md }]}>
-          Your Behavior
-        </Text>
+        <Text style={[Typography.bodyStrong, { color: Colors.textPrimary, marginBottom: Spacing.md }]}>Live Behavior Analysis</Text>
         <Card variant="surface">
           <Text style={[Typography.body, { color: Colors.textSecondary, lineHeight: 22 }]}>
             {behaviorAnalysis}
@@ -201,56 +193,51 @@ export const AnalysisScreen: React.FC<Props> = ({ navigation, route }) => {
         </Card>
       </View>
 
-      {/* Action Buttons */}
+      {blockchainError ? (
+        <Card variant="surface" style={styles.errorCard}>
+          <Text style={[Typography.caption, { color: Colors.error }]}>{blockchainError}</Text>
+        </Card>
+      ) : null}
+
+      {explorerUrl ? (
+        <Card variant="surface" style={{ marginTop: Spacing.md }}>
+          <Text style={[Typography.caption, { color: Colors.primary }]} onPress={() => {
+            // open explorer link via navigation or Linking
+            // Keep behavior simple: copy or inform; for now log
+            console.log('[Explorer] Open:', explorerUrl);
+          }}>{explorerUrl}</Text>
+        </Card>
+      ) : null}
+
       <View style={styles.buttonContainer}>
-        {decision === 'ALLOW' && (
-          <Button
-            title="Approve & Send"
-            variant="success"
-            size="lg"
-            onPress={handleDecisionAction}
-          />
+        {decision === DecisionType.ALLOW && (
+          <Button title="Send Immediately" variant="success" size="lg" onPress={handleDecisionAction} />
         )}
-        {decision === 'REJECT' && (
-          <Button
-            title="Return to Home"
-            variant="secondary"
-            size="lg"
-            onPress={() => navigation.navigate('Home')}
-          />
+        {decision === DecisionType.REJECT && (
+          <Button title="Return to Home" variant="secondary" size="lg" onPress={() => navigation.navigate('Home')} />
         )}
-        {decision === 'DELAY' && (
+        {decision === DecisionType.DELAY && (
           <>
             <Button
-              title="Set Timelock"
+              title="Configure Delay"
               variant="warning"
               size="lg"
               onPress={handleDecisionAction}
               style={{ marginBottom: Spacing.md }}
             />
-            <Button
-              title="Cancel"
-              variant="secondary"
-              size="lg"
-              onPress={() => navigation.navigate('Home')}
-            />
+            <Button title="Cancel" variant="secondary" size="lg" onPress={() => navigation.navigate('Home')} />
           </>
         )}
-        {decision === 'PARTIAL' && (
+        {decision === DecisionType.PARTIAL && (
           <>
             <Button
-              title="Approve Partial Amount"
+              title="Adjust Partial Approval"
               variant="partial"
               size="lg"
               onPress={handleDecisionAction}
               style={{ marginBottom: Spacing.md }}
             />
-            <Button
-              title="Cancel"
-              variant="secondary"
-              size="lg"
-              onPress={() => navigation.navigate('Home')}
-            />
+            <Button title="Cancel" variant="secondary" size="lg" onPress={() => navigation.navigate('Home')} />
           </>
         )}
       </View>
@@ -260,15 +247,14 @@ export const AnalysisScreen: React.FC<Props> = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   loadingContainer: {
-    flex: 1,
+    minHeight: 280,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
+  loadingText: {
+    color: Colors.textSecondary,
+    marginTop: Spacing.lg,
+    textAlign: 'center',
   },
   badgeContainer: {
     alignItems: 'center',
@@ -287,6 +273,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  monospace: {
+    color: Colors.textPrimary,
+    fontFamily: 'Menlo',
+    flex: 1,
+    textAlign: 'right',
+  },
   scoresSection: {
     marginBottom: Spacing.xl,
   },
@@ -301,6 +293,11 @@ const styles = StyleSheet.create({
   },
   behaviorSection: {
     marginBottom: Spacing.xl,
+  },
+  errorCard: {
+    marginBottom: Spacing.xl,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.error,
   },
   buttonContainer: {
     gap: Spacing.md,
