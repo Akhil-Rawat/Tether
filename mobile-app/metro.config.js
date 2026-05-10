@@ -12,4 +12,12 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
+// Provide a resolver alias so web builds use our safe shim instead of the
+// package root which intentionally throws at runtime in some @noble packages.
+config.resolver.extraNodeModules = config.resolver.extraNodeModules || {};
+config.resolver.extraNodeModules['@noble/hashes'] = path.resolve(
+  projectRoot,
+  'src/shims/@noble-hashes.js'
+);
+
 module.exports = config;

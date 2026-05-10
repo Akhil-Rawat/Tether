@@ -15,6 +15,7 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaWrapper, Card, Button, LoadingOverlay } from '../components';
 import { useTransactionStore } from '../store/transactionStore';
+import { useOCRStore } from '../store/ocrStore';
 import { Colors, Typography, Spacing, BorderRadius } from '../themes';
 import type { RootStackParamList } from '../types';
 import { isValidSolanaAddress } from '../utils';
@@ -33,6 +34,7 @@ export const SendScreen: React.FC<Props> = ({ navigation }) => {
   const analyzeCurrentTransaction = useTransactionStore((s) => s.analyzeCurrentTransaction);
   const isAnalyzing = useTransactionStore((s) => s.isAnalyzing);
   const blockchainError = useTransactionStore((s) => s.blockchainError);
+  const currentThreatScan = useOCRStore((state) => state.currentScan);
 
   const handleSend = async () => {
     setError('');
@@ -157,6 +159,15 @@ export const SendScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </Card>
 
+        {currentThreatScan ? (
+          <Card variant="surface" style={styles.threatCard}>
+            <Text style={[Typography.captionStrong, { color: Colors.error }]}>OCR THREAT CONTEXT ACTIVE</Text>
+            <Text style={[Typography.caption, { color: Colors.textSecondary, marginTop: Spacing.sm }]}>
+              Guardian will factor this local phishing analysis into the next decision. {currentThreatScan.analysis.recommendedAction === 'REJECT' ? 'High-risk findings can force REJECT.' : 'Review the result before sending.'}
+            </Text>
+          </Card>
+        ) : null}
+
         {/* Send Button */}
         <Button
           title={loading || isAnalyzing ? 'Analyzing...' : 'Review & Send'}
@@ -211,6 +222,11 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     marginBottom: Spacing.lg,
+  },
+  threatCard: {
+    marginBottom: Spacing.lg,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.error,
   },
   infoRow: {
     flexDirection: 'row',

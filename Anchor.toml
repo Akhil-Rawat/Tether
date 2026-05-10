@@ -19,7 +19,7 @@ guardian_executor = "AZucgktYabWn9PC72y1n5PXNersf528bEWBEezzixsPM"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

@@ -11,6 +11,8 @@ import { Colors } from '../themes';
 // Screens
 import { HomeScreen } from '../screens/HomeScreen';
 import { SendScreen } from '../screens/SendScreen';
+import { OCRScanScreen } from '../screens/OCRScanScreen';
+import { ThreatAnalysisScreen } from '../screens/ThreatAnalysisScreen';
 import { AnalysisScreen } from '../screens/AnalysisScreen';
 import { DelayScreen } from '../screens/DelayScreen';
 import { PartialApprovalScreen } from '../screens/PartialApprovalScreen';
@@ -52,6 +54,22 @@ export const AppNavigator: React.FC = () => {
           component={SendScreen}
           options={{
             title: 'Send SOL',
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="OCRScan"
+          component={OCRScanScreen}
+          options={{
+            title: 'Scan for Threats',
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="ThreatAnalysis"
+          component={ThreatAnalysisScreen}
+          options={{
+            title: 'Threat Analysis',
             presentation: 'card',
           }}
         />

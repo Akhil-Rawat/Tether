@@ -1,6 +1,5 @@
-import * as anchor from '@coral-xyz/anchor';
+import { AnchorProvider, Program, Idl } from '@coral-xyz/anchor';
 import { Buffer } from 'buffer';
-import { sha256 } from '@noble/hashes/sha256';
 import nacl from 'tweetnacl';
 import {
   Connection,
@@ -33,8 +32,8 @@ function u64LEBytes(value: bigint): Uint8Array {
 
 interface GuardianWalletAdapter {
   publicKey: PublicKey;
-  signTransaction: (transaction: anchor.web3.Transaction) => Promise<anchor.web3.Transaction>;
-  signAllTransactions: (transactions: anchor.web3.Transaction[]) => Promise<anchor.web3.Transaction[]>;
+  signTransaction: (transaction: Transaction) => Promise<Transaction>;
+  signAllTransactions: (transactions: Transaction[]) => Promise<Transaction[]>;
 }
 
 function createWalletAdapter(keypair: Keypair): GuardianWalletAdapter {
@@ -51,12 +50,12 @@ function createWalletAdapter(keypair: Keypair): GuardianWalletAdapter {
   };
 }
 
-function createProvider(connection: Connection, keypair: Keypair): anchor.AnchorProvider {
+function createProvider(connection: Connection, keypair: Keypair): AnchorProvider {
   const wallet = createWalletAdapter(keypair);
-  return new anchor.AnchorProvider(
+  return new AnchorProvider(
     connection,
-    wallet as unknown as anchor.Wallet,
-    anchor.AnchorProvider.defaultOptions()
+    wallet as unknown as any,
+    { commitment: 'confirmed' }
   );
 }
 
@@ -64,7 +63,7 @@ export function toLamports(amountSol: number): bigint {
   return BigInt(Math.round(amountSol * LAMPORTS_PER_SOL));
 }
 
-export function computeDecisionHash(decisionData: GuardianDecisionPackage): Uint8Array {
+export async function computeDecisionHash(decisionData: GuardianDecisionPackage): Promise<Uint8Array> {
   const decisionBuf = new Uint8Array(1);
   decisionBuf[0] = Number(decisionData.decision);
 
@@ -92,7 +91,34 @@ export function computeDecisionHash(decisionData: GuardianDecisionPackage): Uint
   concat.set(nonceU8, decisionBuf.length + amountU8.length + recipientBuf.length);
   concat.set(expiryU8, decisionBuf.length + amountU8.length + recipientBuf.length + nonceU8.length);
 
-  return new Uint8Array(sha256(concat));
+  // Try Web Crypto first (browser / React Native with global crypto)
+  try {
+    const subtle = (globalThis as any).crypto?.subtle || (globalThis as any).msCrypto?.subtle;
+    if (subtle && typeof subtle.digest === 'function') {
+      const hashed = await subtle.digest('SHA-256', concat.buffer);
+      return new Uint8Array(hashed);
+    }
+  } catch (e) {
+    // fall through to other methods
+  }
+
+  // Try Node's crypto module if available
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const nodeCrypto = require('crypto');
+    const hashBuffer = nodeCrypto.createHash('sha256').update(Buffer.from(concat)).digest();
+    return new Uint8Array(hashBuffer);
+  } catch (e) {
+    // fall through
+  }
+
+  // Fallback to dynamic import of @noble/hashes submodule
+  try {
+    const { sha256 } = await import('@noble/hashes/sha256');
+    return new Uint8Array(sha256(concat));
+  } catch (e) {
+    throw new Error('No suitable SHA-256 implementation available');
+  }
 }
 
 export function signDecisionHash(decisionHash: Uint8Array, aiSecretKey: Uint8Array): Uint8Array {
@@ -126,7 +152,7 @@ export function createEd25519Instruction(
 
 export async function buildGuardianTransaction(
   connection: Connection,
-  program: anchor.Program,
+  program: Program,
   decisionData: GuardianDecisionPackage,
   signature: Uint8Array,
   aiPublicKey: PublicKey,
@@ -136,7 +162,7 @@ export async function buildGuardianTransaction(
   delayedTxPDA: PublicKey
 ): Promise<{ success: boolean; transactionSignature?: string; decisionHash: string; signature: string; error?: string }> {
   try {
-    const decisionHash = computeDecisionHash(decisionData);
+    const decisionHash = await computeDecisionHash(decisionData);
     const ed25519Instruction = createEd25519Instruction(decisionHash, signature, aiPublicKey);
 
     const anchorInstruction = await program.methods
@@ -257,10 +283,10 @@ export class GuardianTransactionBuilder {
     const signer = await walletService.getUserWallet();
     const aiAuthority = await walletService.getAiAuthorityWallet();
     const provider = createProvider(connection, signer);
-    const program = new anchor.Program(guardianIdl as anchor.Idl, provider);
+    const program = new Program(guardianIdl as Idl, provider);
 
     const decisionData = this.buildDecisionPackage(analysis, overrides);
-    const decisionHash = computeDecisionHash(decisionData);
+    const decisionHash = await computeDecisionHash(decisionData);
     const signature = signDecisionHash(decisionHash, aiAuthority.secretKey);
     const recipient = new PublicKey(analysis.transaction.recipient);
     const nonceValue = decisionData.nonce;

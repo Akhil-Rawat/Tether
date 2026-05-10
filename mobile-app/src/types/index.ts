@@ -93,6 +93,8 @@ export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type RootStackParamList = {
   Home: undefined;
   Send: undefined;
+  OCRScan: undefined;
+  ThreatAnalysis: { scanId: string };
   Analysis: { transactionId: string };
   Delay: { analysisId: string };
   PartialApproval: { analysisId: string };

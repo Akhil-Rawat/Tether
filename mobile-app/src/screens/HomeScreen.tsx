@@ -14,6 +14,7 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaWrapper, Card, Button, DecisionBadge } from '../components';
 import { useTransactionStore } from '../store/transactionStore';
+import { useOCRStore } from '../store/ocrStore';
 import { Colors, Typography, Spacing } from '../themes';
 import type { RootStackParamList } from '../types';
 
@@ -21,6 +22,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const history = useTransactionStore((state) => state.history);
+  const currentScan = useOCRStore((state) => state.currentScan);
 
   return (
     <SafeAreaWrapper scroll>
@@ -78,6 +80,14 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         size="lg"
         onPress={() => navigation.navigate('Send')}
         style={styles.sendButton}
+      />
+
+      <Button
+        title={currentScan ? 'Review OCR Threat Signal' : 'Scan Screenshot or QR'}
+        variant="secondary"
+        size="lg"
+        onPress={() => navigation.navigate('OCRScan')}
+        style={styles.scanButton}
       />
 
       {/* Recent Activity */}
@@ -185,6 +195,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
   sendButton: {
+    marginBottom: Spacing.xl,
+  },
+  scanButton: {
     marginBottom: Spacing.xl,
   },
   section: {

@@ -6,6 +6,7 @@ import { guardianTransactionBuilder, toLamports } from './transactionBuilder';
 import {
   GUARDIAN_DEVNET_RPC_URL,
   GuardianAnalysisResult,
+  GuardianThreatContext,
   GuardianTransactionInput,
   GuardianExecutionResult,
 } from './types';
@@ -33,7 +34,10 @@ export class GuardianService {
     return info !== null;
   }
 
-  async analyzeTransaction(input: GuardianTransactionInput): Promise<GuardianAnalysisResult> {
+  async analyzeTransaction(
+    input: GuardianTransactionInput,
+    threatContext?: GuardianThreatContext
+  ): Promise<GuardianAnalysisResult> {
     const signer = await walletService.getUserWallet();
     const recipient = new PublicKey(input.recipient);
     const amountLamports = toLamports(input.amountSol);
@@ -49,6 +53,18 @@ export class GuardianService {
     const impactScore = Math.min(100, Math.round(balanceRatio * 1.3));
     const confidence = Math.max(5, 100 - Math.max(riskScore, deviationScore));
 
+    const phishingAnalysis = threatContext?.phishingAnalysis ?? null;
+    const threatBoost = phishingAnalysis
+      ? Math.max(
+          phishingAnalysis.threatScore,
+          phishingAnalysis.phishingProbability,
+          phishingAnalysis.scamConfidence
+        )
+      : 0;
+    const boostedRiskScore = Math.min(100, Math.max(riskScore, threatBoost));
+    const boostedDeviationScore = Math.min(100, Math.max(deviationScore, Math.round(threatBoost * 0.9)));
+    const boostedConfidence = Math.max(1, 100 - Math.max(boostedRiskScore, boostedDeviationScore));
+
     let decision: DecisionType = DecisionType.ALLOW;
     let delaySeconds = 0;
     let partialAmount = 0n;
@@ -58,7 +74,16 @@ export class GuardianService {
       riskFactors.push('Recipient account does not exist on devnet');
     }
 
-    if (amountLamports > balanceLamports) {
+    if (phishingAnalysis) {
+      riskFactors.push(`OCR threat detected: ${phishingAnalysis.summary}`);
+      if (phishingAnalysis.indicators.length > 0) {
+        riskFactors.push('Local OCR pipeline identified suspicious text or wallet phishing indicators');
+      }
+    }
+
+    if (phishingAnalysis?.recommendedAction === 'REJECT' || phishingAnalysis?.threatLevel === 'CRITICAL') {
+      decision = DecisionType.REJECT;
+    } else if (amountLamports > balanceLamports) {
       riskFactors.push('Requested amount exceeds available balance');
       decision = DecisionType.REJECT;
     } else if (!recipientExists && balanceRatio > 35) {
@@ -101,7 +126,7 @@ export class GuardianService {
 
     const aiAuthority = await walletService.getAiAuthorityWallet();
     const { computeDecisionHash, signDecisionHash } = await import('./transactionBuilder');
-    const hashBuffer = computeDecisionHash(decisionPackage as any);
+    const hashBuffer = await computeDecisionHash(decisionPackage as any);
     const signatureBuffer = signDecisionHash(hashBuffer, aiAuthority.secretKey);
 
     const reasoning =
@@ -112,6 +137,10 @@ export class GuardianService {
           : decision === DecisionType.DELAY
             ? `Guardian found a live risk signal in the current account state. The transaction is valid, but it should be delayed for manual review.`
             : `Guardian detected a live mismatch between the requested transfer and the available account state, so execution is blocked.`;
+
+    const ocrReasoning = phishingAnalysis
+      ? `\n\nOCR risk overlay: ${phishingAnalysis.reasoning}`
+      : '';
 
     const behaviorAnalysis =
       `Current balance is ${Number(balanceLamports) / 1_000_000_000} SOL. ` +
@@ -143,12 +172,12 @@ export class GuardianService {
       decisionHash: Buffer.from(hashBuffer).toString('hex'),
       signature: Buffer.from(signatureBuffer).toString('hex'),
       scores: {
-        confidence,
-        riskScore,
-        deviationScore,
+        confidence: boostedConfidence,
+        riskScore: boostedRiskScore,
+        deviationScore: boostedDeviationScore,
         impactScore,
       },
-      reasoning,
+      reasoning: `${reasoning}${ocrReasoning}`,
       riskFactors,
       behaviorAnalysis,
       balanceLamports,

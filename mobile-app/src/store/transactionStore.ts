@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { DecisionType, TransactionStatus } from '../types';
 import { guardianService } from '../services/solana/guardianService';
+import type { OCRScanResult } from '../services/ocr/types';
 import type {
   GuardianAnalysisResult,
   GuardianExecutionOptions,
@@ -22,6 +23,7 @@ export interface TransactionStoreState {
     status: TransactionStatus;
   } | null;
   currentAnalysis: GuardianAnalysisResult | null;
+  currentThreatScan: OCRScanResult | null;
   history: GuardianAnalysisResult[];
   latestExecution: GuardianExecutionResult | null;
   transactionSignature: string | null;
@@ -32,6 +34,7 @@ export interface TransactionStoreState {
   isExecuting: boolean;
   confirmationStatus: 'idle' | 'analyzing' | 'submitted' | 'confirmed' | 'blocked' | 'failed';
   startNewTransaction: (recipient: string, amount: number) => string;
+  setThreatScan: (scan: OCRScanResult | null) => void;
   analyzeCurrentTransaction: () => Promise<GuardianAnalysisResult | null>;
   executeCurrentTransaction: (options?: Partial<GuardianExecutionOptions>) => Promise<GuardianExecutionResult | null>;
   clearBlockchainError: () => void;
@@ -42,6 +45,7 @@ export interface TransactionStoreState {
 export const useTransactionStore = create<TransactionStoreState>((set, get) => ({
   currentTransaction: null,
   currentAnalysis: null,
+  currentThreatScan: null,
   history: [],
   latestExecution: null,
   transactionSignature: null,
@@ -63,6 +67,7 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
         status: TransactionStatus.PENDING,
       },
       currentAnalysis: null,
+      currentThreatScan: null,
       latestExecution: null,
       transactionSignature: null,
       explorerUrl: null,
@@ -74,8 +79,10 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
     return id;
   },
 
+  setThreatScan: (scan) => set({ currentThreatScan: scan }),
+
   analyzeCurrentTransaction: async () => {
-    const { currentTransaction } = get();
+    const { currentTransaction, currentThreatScan } = get();
 
     if (!currentTransaction) {
       set({ blockchainError: 'No transaction to analyze', confirmationStatus: 'failed' });
@@ -88,7 +95,9 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
       const analysis = await guardianService.analyzeTransaction({
         recipient: currentTransaction.recipient,
         amountSol: currentTransaction.amount,
-      } satisfies GuardianTransactionInput);
+      } satisfies GuardianTransactionInput, {
+        phishingAnalysis: currentThreatScan?.analysis ?? null,
+      });
 
       set({
         currentAnalysis: analysis,
@@ -207,6 +216,7 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
     set({
       currentTransaction: null,
       currentAnalysis: null,
+      currentThreatScan: null,
       history: [],
       latestExecution: null,
       transactionSignature: null,

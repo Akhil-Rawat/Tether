@@ -27,17 +27,17 @@ export const SafeAreaWrapper: React.FC<SafeAreaWrapperProps> = ({
   );
 
   if (scroll) {
-    const { ScrollViewComponent } = require('react-native');
+    const { ScrollView } = require('react-native');
     return (
       <SafeAreaView style={styles.safeArea}>
-        <ScrollViewComponent
+        <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           {...scrollProps}
         >
           {content}
-        </ScrollViewComponent>
+        </ScrollView>
       </SafeAreaView>
     );
   }

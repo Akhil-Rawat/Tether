@@ -1,8 +1,9 @@
 import { PublicKey } from '@solana/web3.js';
 import type { DecisionType, TransactionStatus } from '../../types';
+import type { PhishingAnalysisResult } from '../ocr/types';
 
 export const GUARDIAN_DEVNET_RPC_URL = 'https://api.devnet.solana.com';
-export const GUARDIAN_PROGRAM_ID = 'AZucgktYabWn9PC72y1n5PXNersf528bEWBEezzixsPM';
+export const GUARDIAN_PROGRAM_ID = 'EBWBHWJ5ocXEbrxqoJ6MGoeopLeLLoa4Uhy3HSD1M46n';
 export const GUARDIAN_EXPLORER_CLUSTER = 'devnet';
 
 export type GuardianDecisionValue = 0 | 1 | 2 | 3;
@@ -10,6 +11,10 @@ export type GuardianDecisionValue = 0 | 1 | 2 | 3;
 export interface GuardianTransactionInput {
   recipient: string;
   amountSol: number;
+}
+
+export interface GuardianThreatContext {
+  phishingAnalysis?: PhishingAnalysisResult | null;
 }
 
 export interface GuardianDecisionPackage {
