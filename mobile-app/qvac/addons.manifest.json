@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "bundleId": "aa875be7be179b3654665952d210be663aa882d0285003e2a87c16c1742befbb",
+  "bundleId": "5022ac64a50c249f07e9a02acd8e3b31ddaeb00067b676ec9cbeac54fc04dd3a",
   "addons": [
     "@qvac/diffusion-cpp",
     "@qvac/embed-llamacpp",

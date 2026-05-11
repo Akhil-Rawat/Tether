@@ -1,10 +1,11 @@
-import { PublicKey } from '@solana/web3.js';
-import type { DecisionType, TransactionStatus } from '../../types';
-import type { PhishingAnalysisResult } from '../ocr/types';
+import { PublicKey } from "@solana/web3.js";
+import type { DecisionType, TransactionStatus } from "../../types";
+import type { PhishingAnalysisResult } from "../ocr/types";
 
-export const GUARDIAN_DEVNET_RPC_URL = 'https://api.devnet.solana.com';
-export const GUARDIAN_PROGRAM_ID = 'EBWBHWJ5ocXEbrxqoJ6MGoeopLeLLoa4Uhy3HSD1M46n';
-export const GUARDIAN_EXPLORER_CLUSTER = 'devnet';
+export const GUARDIAN_DEVNET_RPC_URL = "https://api.devnet.solana.com";
+export const GUARDIAN_PROGRAM_ID =
+  "EBWBHWJ5ocXEbrxqoJ6MGoeopLeLLoa4Uhy3HSD1M46n";
+export const GUARDIAN_EXPLORER_CLUSTER = "devnet";
 
 export type GuardianDecisionValue = 0 | 1 | 2 | 3;
 
@@ -58,6 +59,8 @@ export interface GuardianAnalysisResult {
   confirmationRequired: boolean;
   recommendedAction: string;
   createdAt: number;
+  executionStatus?: "SUCCESS" | "BLOCKED" | "FAILED";
+  executionError?: string | null;
 }
 
 export interface GuardianExecutionOptions {
@@ -73,13 +76,13 @@ export interface GuardianExecutionResult {
   explorerUrl?: string;
   decisionHash: string;
   signature: string;
-  status: 'SUBMITTED' | 'CONFIRMED' | 'BLOCKED' | 'FAILED';
+  status: "SUBMITTED" | "CONFIRMED" | "BLOCKED" | "FAILED";
   error?: string;
 }
 
 export interface GuardianWalletSnapshot {
   publicKey: PublicKey;
-  keypair: import('@solana/web3.js').Keypair;
+  keypair: import("@solana/web3.js").Keypair;
 }
 
 export interface GuardianServiceState {

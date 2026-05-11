@@ -13,7 +13,7 @@ export const formatSOL = (amount: number): string => {
  * Format address with ellipsis
  */
 export const truncateAddress = (address: string, chars = 8): string => {
-  if (!address) return '';
+  if (!address) return "";
   if (address.length <= chars * 2 + 3) return address;
   return `${address.slice(0, chars)}...${address.slice(-chars)}`;
 };
@@ -22,10 +22,10 @@ export const truncateAddress = (address: string, chars = 8): string => {
  * Get risk level label from score
  */
 export const getRiskLevel = (score: number): string => {
-  if (score >= 75) return 'CRITICAL';
-  if (score >= 50) return 'HIGH';
-  if (score >= 25) return 'MEDIUM';
-  return 'LOW';
+  if (score >= 75) return "CRITICAL";
+  if (score >= 50) return "HIGH";
+  if (score >= 25) return "MEDIUM";
+  return "LOW";
 };
 
 /**
@@ -34,8 +34,8 @@ export const getRiskLevel = (score: number): string => {
 export const formatTime = (timestamp: number): string => {
   const date = new Date(timestamp);
   return date.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
@@ -45,9 +45,9 @@ export const formatTime = (timestamp: number): string => {
 export const formatDate = (timestamp: number): string => {
   const date = new Date(timestamp);
   return date.toLocaleDateString([], {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 };
 
@@ -73,9 +73,16 @@ export const timeUntil = (timestamp: number): string => {
  * Validate Solana address format
  */
 export const isValidSolanaAddress = (address: string): boolean => {
-  // Basic validation - Solana addresses are 44 base58 characters
-  if (address.length !== 44) return false;
-  // Check if it only contains valid base58 characters
-  const base58Regex = /^[1-9A-HJ-NP-Z]+$/;
-  return base58Regex.test(address);
+  // Use Solana PublicKey constructor for robust validation
+  try {
+    // Lazy import to avoid bundling issues in non-solana contexts
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { PublicKey } = require("@solana/web3.js");
+    // Will throw if invalid
+    // eslint-disable-next-line no-new
+    new PublicKey(address);
+    return true;
+  } catch (e) {
+    return false;
+  }
 };

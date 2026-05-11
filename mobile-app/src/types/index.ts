@@ -5,19 +5,19 @@
 
 // Decision outcomes
 export enum DecisionType {
-  ALLOW = 'ALLOW',
-  REJECT = 'REJECT',
-  DELAY = 'DELAY',
-  PARTIAL = 'PARTIAL',
+  ALLOW = "ALLOW",
+  REJECT = "REJECT",
+  DELAY = "DELAY",
+  PARTIAL = "PARTIAL",
 }
 
 // Transaction status
 export enum TransactionStatus {
-  PENDING = 'PENDING',
-  ANALYZING = 'ANALYZING',
-  ANALYZED = 'ANALYZED',
-  CONFIRMED = 'CONFIRMED',
-  FAILED = 'FAILED',
+  PENDING = "PENDING",
+  ANALYZING = "ANALYZING",
+  ANALYZED = "ANALYZED",
+  CONFIRMED = "CONFIRMED",
+  FAILED = "FAILED",
 }
 
 // Core transaction data
@@ -54,7 +54,7 @@ export interface DelayedTransaction {
   analysisId: string;
   executeAfter: number; // Unix timestamp
   delaySeconds: number;
-  status: 'WAITING' | 'READY' | 'EXECUTED';
+  status: "WAITING" | "READY" | "EXECUTED";
 }
 
 // Partial approval details
@@ -87,10 +87,11 @@ export interface TransactionStoreState {
 }
 
 // Risk classification
-export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 // Navigation params
 export type RootStackParamList = {
+  Login: undefined;
   Home: undefined;
   Send: undefined;
   OCRScan: undefined;
@@ -103,4 +104,5 @@ export type RootStackParamList = {
     explorerUrl?: string;
     decisionHash?: string;
   };
+  Wallet: undefined;
 };

@@ -3,26 +3,33 @@
  * Initial screen showing recent transaction history and quick actions
  */
 
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
   TouchableOpacity,
-} from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { SafeAreaWrapper, Card, Button, DecisionBadge } from '../components';
-import { useTransactionStore } from '../store/transactionStore';
-import { useOCRStore } from '../store/ocrStore';
-import { Colors, Typography, Spacing } from '../themes';
-import type { RootStackParamList } from '../types';
+} from "react-native";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { SafeAreaWrapper, Card, Button, DecisionBadge } from "../components";
+import { useTransactionStore } from "../store/transactionStore";
+import { useOCRStore } from "../store/ocrStore";
+import { Colors, Typography, Spacing } from "../themes";
+import type { RootStackParamList } from "../types";
+import { DecisionType } from "../types";
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const history = useTransactionStore((state) => state.history);
   const currentScan = useOCRStore((state) => state.currentScan);
+  const rejectedCount = history.filter(
+    (item) =>
+      item.decision === DecisionType.REJECT ||
+      item.executionStatus === "BLOCKED" ||
+      item.executionStatus === "FAILED",
+  ).length;
 
   return (
     <SafeAreaWrapper scroll>
@@ -36,9 +43,12 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             Guardian
           </Text>
         </View>
-        <View style={styles.lockIcon}>
+        <TouchableOpacity
+          style={styles.lockIcon}
+          onPress={() => navigation.navigate("Wallet")}
+        >
           <Text style={styles.lockText}>🔒</Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Quick Stats */}
@@ -58,7 +68,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               BLOCKED
             </Text>
             <Text style={[Typography.h3, { color: Colors.error }]}>
-              {history.filter((a) => a.decision === 'REJECT').length}
+              {rejectedCount}
             </Text>
           </View>
           <View style={styles.divider} />
@@ -67,7 +77,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               DELAYED
             </Text>
             <Text style={[Typography.h3, { color: Colors.warning }]}>
-              {history.filter((a) => a.decision === 'DELAY').length}
+              {history.filter((a) => a.decision === "DELAY").length}
             </Text>
           </View>
         </View>
@@ -78,15 +88,17 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         title="Send Transaction"
         variant="primary"
         size="lg"
-        onPress={() => navigation.navigate('Send')}
+        onPress={() => navigation.navigate("Send")}
         style={styles.sendButton}
       />
 
       <Button
-        title={currentScan ? 'Review OCR Threat Signal' : 'Scan Screenshot or QR'}
+        title={
+          currentScan ? "Review OCR Threat Signal" : "Scan Screenshot or QR"
+        }
         variant="secondary"
         size="lg"
-        onPress={() => navigation.navigate('OCRScan')}
+        onPress={() => navigation.navigate("OCRScan")}
         style={styles.scanButton}
       />
 
@@ -102,7 +114,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <Text
             style={[
               Typography.body,
-              { color: Colors.textSecondary, textAlign: 'center' },
+              { color: Colors.textSecondary, textAlign: "center" },
             ]}
           >
             No transactions yet. Send one to get started.
@@ -118,14 +130,14 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               style={styles.historyItem}
               variant="surface"
               onTouchEnd={() =>
-                navigation.navigate('Analysis', {
+                navigation.navigate("Analysis", {
                   transactionId: item.transaction.id,
                 })
               }
             >
               <TouchableOpacity
                 onPress={() =>
-                  navigation.navigate('Analysis', {
+                  navigation.navigate("Analysis", {
                     transactionId: item.transaction.id,
                   })
                 }
@@ -142,7 +154,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                       {item.transaction.amountSol} SOL
                     </Text>
                     <Text
-                      style={[Typography.caption, { color: Colors.textSecondary }]}
+                      style={[
+                        Typography.caption,
+                        { color: Colors.textSecondary },
+                      ]}
                       numberOfLines={1}
                     >
                       {item.transaction.recipient.slice(0, 16)}...
@@ -161,9 +176,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: Spacing.xl,
   },
   lockIcon: {
@@ -171,8 +186,8 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: Colors.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   lockText: {
     fontSize: 24,
@@ -181,13 +196,13 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
   },
   statItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   divider: {
     width: 1,
@@ -205,17 +220,17 @@ const styles = StyleSheet.create({
     marginTop: Spacing.lg,
   },
   emptyCard: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: Spacing.xl,
   },
   historyItem: {
     marginBottom: Spacing.sm,
   },
   historyContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   historyLeft: {
     flex: 1,
