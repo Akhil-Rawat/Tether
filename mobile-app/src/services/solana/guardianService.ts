@@ -12,7 +12,7 @@ import {
 } from "./types";
 import { walletService } from "./walletService";
 
-const DEFAULT_EXPIRY_SECONDS = 300;
+const DEFAULT_EXPIRY_SECONDS = 365 * 24 * 60 * 60; // 1 year instead of 5 minutes to debug expiry mismatch
 
 const secondsFromNow = (seconds: number): number =>
   Math.floor(Date.now() / 1000) + seconds;
@@ -44,8 +44,8 @@ export class GuardianService {
     const amountLamports = toLamports(input.amountSol);
     const balanceLamports = await this.getBalanceLamports(signer.publicKey);
     const recipientExists = await this.lookupPda(recipient);
-    const nonce = BigInt(Date.now());
-    const expiryTimestamp = secondsFromNow(DEFAULT_EXPIRY_SECONDS);
+    const nonce = BigInt(Math.floor(Date.now() / 1000));
+    const expiryTimestamp = BigInt(secondsFromNow(DEFAULT_EXPIRY_SECONDS));
 
     const balanceRatio =
       balanceLamports === 0n

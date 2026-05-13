@@ -15,6 +15,7 @@ import {
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaWrapper, Card, Button, LoadingOverlay } from "../components";
 import { useTransactionStore } from "../store/transactionStore";
+import { useWalletStore } from "../store/walletStore";
 import { useOCRStore } from "../store/ocrStore";
 import { Colors, Typography, Spacing, BorderRadius } from "../themes";
 import type { RootStackParamList } from "../types";
@@ -36,6 +37,10 @@ export const SendScreen: React.FC<Props> = ({ navigation }) => {
   );
   const isAnalyzing = useTransactionStore((s) => s.isAnalyzing);
   const blockchainError = useTransactionStore((s) => s.blockchainError);
+  const walletError = useWalletStore((s) => s.error);
+  const walletAddress = useWalletStore((s) => s.userAddress);
+  const walletBalance = useWalletStore((s) => s.balance);
+  const walletNetwork = useWalletStore((s) => s.network);
   const currentThreatScan = useOCRStore((state) => state.currentScan);
 
   const handleSend = async () => {
@@ -73,9 +78,15 @@ export const SendScreen: React.FC<Props> = ({ navigation }) => {
 
       setLoading(false);
 
+      const latestBlockchainError =
+        useTransactionStore.getState().blockchainError;
+
       if (!analysis) {
         setError(
-          blockchainError ?? "Blockchain error: Analysis could not complete",
+          latestBlockchainError ??
+            blockchainError ??
+            walletError ??
+            "Blockchain error: Analysis could not complete",
         );
         return;
       }
@@ -164,6 +175,42 @@ export const SendScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </Card>
 
+        <Card variant="surface" style={styles.walletSnapshotCard}>
+          <Text
+            style={[Typography.captionStrong, { color: Colors.textSecondary }]}
+          >
+            WALLET SNAPSHOT
+          </Text>
+          <Text
+            style={[
+              Typography.caption,
+              { color: Colors.textPrimary, marginTop: Spacing.xs },
+            ]}
+          >
+            Address: {walletAddress || "Not loaded"}
+          </Text>
+          <Text
+            style={[
+              Typography.caption,
+              { color: Colors.textPrimary, marginTop: Spacing.xs },
+            ]}
+          >
+            Network: {walletNetwork || "unknown"}
+          </Text>
+          <Text
+            style={[
+              Typography.caption,
+              { color: Colors.textPrimary, marginTop: Spacing.xs },
+            ]}
+          >
+            Balance:{" "}
+            {typeof walletBalance === "number"
+              ? walletBalance.toFixed(4)
+              : "0.0000"}{" "}
+            SOL
+          </Text>
+        </Card>
+
         {/* Error Message */}
         {error && (
           <Card variant="surface" style={[styles.errorCard]}>
@@ -240,6 +287,10 @@ const styles = StyleSheet.create({
   },
   formCard: {
     marginBottom: Spacing.lg,
+  },
+  walletSnapshotCard: {
+    marginBottom: Spacing.lg,
+    padding: Spacing.md,
   },
   inputGroup: {
     marginVertical: Spacing.md,

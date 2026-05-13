@@ -1,5 +1,5 @@
-import BN from 'bn.js';
-import { AnchorProvider, Program, Idl } from "@coral-xyz/anchor";
+import BN from "bn.js";
+import { AnchorProvider } from "@coral-xyz/anchor";
 import { Buffer } from "buffer";
 import * as Crypto from "expo-crypto";
 import nacl from "tweetnacl";
@@ -16,7 +16,6 @@ import {
 } from "@solana/web3.js";
 import guardianIdl from "../../../../target/idl/guardian_executor.json";
 import {
-  GUARDIAN_PROGRAM_ID,
   GuardianAnalysisResult,
   GuardianDecisionPackage,
   GuardianExecutionOptions,
@@ -24,11 +23,27 @@ import {
 } from "./types";
 import { walletService } from "./walletService";
 
-const programId = new PublicKey(GUARDIAN_PROGRAM_ID);
+const programId = new PublicKey((guardianIdl as { address: string }).address);
+const EXECUTE_WITH_VERIFIED_DECISION_DISCRIMINATOR = Buffer.from([
+  0x15,
+  0xb6,
+  0x02,
+  0x2a,
+  0xf4,
+  0x63,
+  0x19,
+  0xd9,
+]);
 
 function u64LEBytes(value: bigint): Uint8Array {
   const buffer = new ArrayBuffer(8);
   new DataView(buffer).setBigUint64(0, value, true);
+  return new Uint8Array(buffer);
+}
+
+function i64LEBytes(value: bigint): Uint8Array {
+  const buffer = new ArrayBuffer(8);
+  new DataView(buffer).setBigInt64(0, value, true);
   return new Uint8Array(buffer);
 }
 
@@ -192,9 +207,85 @@ export function createEd25519Instruction(
   });
 }
 
+/**
+ * Manually encode the DecisionPackage struct into bytes, bypassing Anchor's encoder.
+ * This ensures precise byte-alignment matching the Rust struct layout.
+ * Layout: discriminator(8) + decision(1) + amount(8) + recipient(32) + nonce(8) +
+ *         expiry_timestamp(8) + delay_seconds(8) + partial_amount(8) + signature(64)
+ */
+// function encodeDecisionPackageManual(
+//   decisionData: GuardianDecisionPackage,
+//   signature: Uint8Array,
+// ): Buffer {
+//   // 8-byte discriminator for execute_with_verified_decision
+//   const discriminator = Buffer.from([
+//     0x15, 0xb6, 0x02, 0x2a, 0xf4, 0x63, 0x19, 0xd9,
+//   ]);
+
+//   // Allocate buffer: 8 (discriminator) + 1 (decision) + 8 (amount) + 32 (recipient)
+//   //                  + 8 (nonce) + 8 (expiry) + 8 (delay) + 8 (partial) + 64 (sig)
+//   const buf = Buffer.alloc(145);
+//   let offset = 0;
+
+//   // Copy discriminator
+//   discriminator.copy(buf, offset);
+//   offset += 8;
+
+//   // decision (u8)
+//   buf[offset] = Number(decisionData.decision);
+//   offset += 1;
+
+//   // amount (u64, little-endian)
+//   const amountBuf = new ArrayBuffer(8);
+//   new DataView(amountBuf).setBigUint64(0, decisionData.amount, true);
+//   buf.set(new Uint8Array(amountBuf), offset);
+//   offset += 8;
+
+//   // recipient (Pubkey, 32 bytes)
+//   buf.set(decisionData.recipient.toBuffer(), offset);
+//   offset += 32;
+
+//   // nonce (u64, little-endian)
+//   const nonceBuf = new ArrayBuffer(8);
+//   new DataView(nonceBuf).setBigUint64(0, decisionData.nonce, true);
+//   buf.set(new Uint8Array(nonceBuf), offset);
+//   offset += 8;
+
+//   // expiry_timestamp (i64, little-endian, signed)
+//   const expiryBuf = new ArrayBuffer(8);
+//   new DataView(expiryBuf).setBigInt64(
+//     0,
+//     BigInt(decisionData.expiry_timestamp),
+//     true,
+//   );
+//   buf.set(new Uint8Array(expiryBuf), offset);
+//   offset += 8;
+
+//   // delay_seconds (i64, little-endian, signed)
+//   const delaySec = BigInt(decisionData.delay_seconds ?? 0);
+//   const delayBuf = new ArrayBuffer(8);
+//   new DataView(delayBuf).setBigInt64(0, delaySec, true);
+//   buf.set(new Uint8Array(delayBuf), offset);
+//   offset += 8;
+
+//   // partial_amount (u64, little-endian)
+//   const partialBuf = new ArrayBuffer(8);
+//   new DataView(partialBuf).setBigUint64(
+//     0,
+//     BigInt(decisionData.partial_amount ?? 0n),
+//     true,
+//   );
+//   buf.set(new Uint8Array(partialBuf), offset);
+//   offset += 8;
+
+//   // signature ([u8; 64])
+//   buf.set(signature, offset);
+
+//   return buf;
+// }
+
 export async function buildGuardianTransaction(
   connection: Connection,
-  program: Program,
   decisionData: GuardianDecisionPackage,
   signature: Uint8Array,
   aiPublicKey: PublicKey,
@@ -217,35 +308,57 @@ export async function buildGuardianTransaction(
       aiPublicKey,
     );
 
-    const anchorInstruction = await program.methods
-      .executeWithVerifiedDecision(
-        {
-          decision: Number(decisionData.decision),
-          amount: new BN(decisionData.amount.toString()),
-          recipient: decisionData.recipient,
-          nonce: new BN(decisionData.nonce.toString()),
-          expiry_timestamp: new BN(decisionData.expiry_timestamp.toString()),
-          delay_seconds: new BN((decisionData.delay_seconds ?? 0).toString()),
-          partial_amount: new BN((decisionData.partial_amount ?? 0n).toString()),
-        },
-        [...signature],
-      )
-      .accounts({
-        signer: signer.publicKey,
-        // provide both snake_case (IDL) and camelCase (Anchor JS) variants
-        ai_authority: aiPublicKey,
-        aiAuthority: aiPublicKey,
-        recipient,
-        instruction_sysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
-        instructionSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
-        nonce_pda: noncePDA,
-        noncePda: noncePDA,
-        delayed_tx: delayedTxPDA,
-        delayedTx: delayedTxPDA,
-        system_program: SystemProgram.programId,
-        systemProgram: SystemProgram.programId,
-      })
-      .instruction();
+    const instructionData = Buffer.alloc(8 + 1 + 8 + 32 + 8 + 8 + 8 + 8 + 64);
+    let offset = 0;
+
+    EXECUTE_WITH_VERIFIED_DECISION_DISCRIMINATOR.copy(instructionData, offset);
+    offset += 8;
+
+    instructionData.writeUInt8(Number(decisionData.decision), offset);
+    offset += 1;
+
+    Buffer.from(u64LEBytes(decisionData.amount)).copy(instructionData, offset);
+    offset += 8;
+
+    decisionData.recipient.toBuffer().copy(instructionData, offset);
+    offset += 32;
+
+    Buffer.from(u64LEBytes(decisionData.nonce)).copy(instructionData, offset);
+    offset += 8;
+
+    Buffer.from(i64LEBytes(BigInt(decisionData.expiry_timestamp))).copy(
+      instructionData,
+      offset,
+    );
+    offset += 8;
+
+    Buffer.from(i64LEBytes(BigInt(decisionData.delay_seconds ?? 0))).copy(
+      instructionData,
+      offset,
+    );
+    offset += 8;
+
+    Buffer.from(u64LEBytes(decisionData.partial_amount ?? 0n)).copy(
+      instructionData,
+      offset,
+    );
+    offset += 8;
+
+    Buffer.from(signature).copy(instructionData, offset);
+
+    const anchorInstruction = new TransactionInstruction({
+      programId,
+      keys: [
+        { pubkey: signer.publicKey, isSigner: true, isWritable: true },
+        { pubkey: aiPublicKey, isSigner: false, isWritable: false },
+        { pubkey: recipient, isSigner: false, isWritable: true },
+        { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+        { pubkey: noncePDA, isSigner: false, isWritable: true },
+        { pubkey: delayedTxPDA, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: instructionData,
+    });
 
     const tx = new Transaction().add(ed25519Instruction).add(anchorInstruction);
 
@@ -345,8 +458,9 @@ export class GuardianTransactionBuilder {
 
     // Ensure expiry timestamp is in seconds and not expired. If expired, bump by 1 hour.
     const now = nowSecondsBigInt();
-    let expiry =
-      analysis.decisionPackage.expiry_timestamp ?? (now + 3600n);
+    let expiry = BigInt(
+      analysis.decisionPackage.expiry_timestamp ?? now + 3600n,
+    );
     if (expiry < now) {
       expiry = now + 3600n;
     }
@@ -356,7 +470,7 @@ export class GuardianTransactionBuilder {
       amount,
       recipient,
       nonce: analysis.decisionPackage.nonce,
-      expiry_timestamp: expiry,
+      expiry_timestamp: Number(expiry),
       delay_seconds: delaySeconds,
       partial_amount: partialAmount,
     };
@@ -369,11 +483,14 @@ export class GuardianTransactionBuilder {
   ): Promise<GuardianExecutionResult> {
     const signer = await walletService.getUserWallet();
     const aiAuthority = await walletService.getAiAuthorityWallet();
-    const provider = createProvider(connection, signer);
-    const program = new Program(guardianIdl as Idl, provider);
 
     const decisionData = this.buildDecisionPackage(analysis, overrides);
-    console.log('[Guardian] decision expiry:', decisionData.expiry_timestamp.toString(), 'now:', nowSecondsBigInt().toString());
+    console.log(
+      "[Guardian] decision expiry:",
+      decisionData.expiry_timestamp.toString(),
+      "now:",
+      nowSecondsBigInt().toString(),
+    );
     const decisionHash = await computeDecisionHash(decisionData);
     const signature = signDecisionHash(decisionHash, aiAuthority.secretKey);
     const recipient = new PublicKey(analysis.transaction.recipient);
@@ -396,14 +513,16 @@ export class GuardianTransactionBuilder {
     try {
       const slot = await connection.getSlot();
       const blockTime = await connection.getBlockTime(slot);
-      console.log('[Guardian] chain slot:', slot, 'chain time:', blockTime);
+      console.log("[Guardian] chain slot:", slot, "chain time:", blockTime);
     } catch (e) {
-      console.log('[Guardian] unable to fetch chain time', e?.message ?? e);
+      console.log(
+        "[Guardian] unable to fetch chain time",
+        (e as any)?.message ?? e,
+      );
     }
 
     const result = await buildGuardianTransaction(
       connection,
-      program,
       decisionData,
       signature,
       aiAuthority.publicKey,

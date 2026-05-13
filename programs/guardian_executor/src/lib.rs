@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::clock::Clock;
-use anchor_lang::solana_program::sysvar::instructions as tx_instructions;
+use anchor_lang::solana_program::sysvar::instructions::{self as tx_instructions, load_instruction_at_checked};
 use anchor_lang::system_program;
 
 
-declare_id!("EBWBHWJ5ocXEbrxqoJ6MGoeopLeLLoa4Uhy3HSD1M46n");
+declare_id!("3ZaZPotJCG3fzUvVjbZLLDYcvn8zwdg73n8DC9uwfcX6");
 
 // Decision type constants
 const DECISION_ALLOW: u8 = 0;
@@ -47,17 +47,43 @@ pub mod guardian_executor {
     /// 4. Enforces decision strictly (no user override)
     pub fn execute_with_verified_decision(
         mut ctx: Context<ExecuteWithVerifiedDecision>,
-        // Decision package data (amount, recipient, decision, nonce, expiry)
-        decision_data: DecisionPackage,
+
+        decision: u8,
+        amount: u64,
+        recipient: Pubkey,
+        nonce: u64,
+        expiry_timestamp: u64,
+        delay_seconds: i64,
+        partial_amount: u64,
+
         // Ed25519 signature from AI authority
         signature: [u8; 64],
     ) -> Result<()> {
+        // Reconstruct DecisionPackage locally to avoid Anchor/Hermes nested-struct serialization issues
+        let decision_data = DecisionPackage {
+            decision,
+            amount,
+            recipient,
+            nonce,
+            expiry_timestamp,
+            delay_seconds,
+            partial_amount,
+        };
         let clock = Clock::get()?;
         let now = clock.unix_timestamp;
 
         // ===== STEP 1: VERIFY DECISION HASN'T EXPIRED =====
+        msg!("[DEBUG] Deserialized decision_data:");
+        msg!("  decision: {}", decision_data.decision);
+        msg!("  amount: {}", decision_data.amount);
+        msg!("  nonce: {}", decision_data.nonce);
+        msg!("  expiry_timestamp: {}", decision_data.expiry_timestamp);
+        msg!("  delay_seconds: {}", decision_data.delay_seconds);
+        msg!("  partial_amount: {}", decision_data.partial_amount);
+        msg!("[DEBUG] Chain time: {}", now);
+        
         require!(
-            now <= decision_data.expiry_timestamp,
+            (now as u64) <= decision_data.expiry_timestamp,
             GuardianError::ExpiredDecision
         );
 
@@ -355,100 +381,81 @@ fn verify_ed25519_instruction_exists(
     signature: &[u8; 64],
     ai_authority: &Pubkey,
 ) -> Result<()> {
-    // Load transaction instructions from sysvar
-    let instruction_sysvar = &ctx.accounts.instruction_sysvar;
-    
     msg!("Verifying Ed25519 instruction exists in transaction...");
 
     // Verify instruction_sysvar is actually the instructions sysvar
     require!(
-        instruction_sysvar.key() == tx_instructions::ID,
+        ctx.accounts.instruction_sysvar.key() == tx_instructions::ID,
         GuardianError::InvalidInstructionSysvar
     );
 
-    // Load the instruction data
-    let instruction_data = instruction_sysvar.data.borrow();
-    
-    // Minimum instruction layout:
-    // - u16 (2 bytes): number of signatures
-    // - u16 (2 bytes): public key offset  
-    // - u16 (2 bytes): signature offset
-    // - u16 (2 bytes): message offset
-    // - u16 (2 bytes): message length
-    // Total header: 10 bytes
+    // Load instruction at index 0 (Ed25519 must be first instruction)
+    let ed25519_ix = load_instruction_at_checked(0, &ctx.accounts.instruction_sysvar.to_account_info())
+        .map_err(|_| GuardianError::InvalidEd25519Instruction)?;
+
+    msg!("Ed25519 instruction program ID: {}", ed25519_ix.program_id);
+
+    // Verify it's the Ed25519Program
     require!(
-        instruction_data.len() >= 10,
+        ed25519_ix.program_id.to_string() == "Ed25519SigVerify111111111111111111111111111",
         GuardianError::InvalidEd25519Instruction
     );
+
+    // Ed25519 instruction data format (for verifying a single signature):
+    // [0] = num_signatures (1 byte) = 1
+    // [1] = public key offset (2 bytes LE)
+    // [3] = signature offset (2 bytes LE)
+    // [5] = message offset (2 bytes LE)
+    // [7] = message length (2 bytes LE)
+    // Followed by: pubkey (32 bytes) + signature (64 bytes) + message (32 bytes)
+
+    let data = &ed25519_ix.data;
+    require!(data.len() >= 10, GuardianError::InvalidEd25519Instruction);
 
     // Parse header
-    let mut cursor = 0;
-    
-    // Parse num_signatures (should be 1)
-    let num_sigs = u16::from_le_bytes([instruction_data[cursor], instruction_data[cursor + 1]]) as usize;
-    cursor += 2;
-    require!(
-        num_sigs == 1,
-        GuardianError::InvalidEd25519Instruction
-    );
-    msg!("✓ Ed25519: {} signature(s)", num_sigs);
+    let num_sigs = data[0] as usize;
+    require!(num_sigs == 1, GuardianError::InvalidEd25519Instruction);
 
-    // Parse offsets
-    let pk_offset = u16::from_le_bytes([instruction_data[cursor], instruction_data[cursor + 1]]) as usize;
-    cursor += 2;
-    let sig_offset = u16::from_le_bytes([instruction_data[cursor], instruction_data[cursor + 1]]) as usize;
-    cursor += 2;
-    let msg_offset = u16::from_le_bytes([instruction_data[cursor], instruction_data[cursor + 1]]) as usize;
-    cursor += 2;
-    let msg_len = u16::from_le_bytes([instruction_data[cursor], instruction_data[cursor + 1]]) as usize;
-    cursor += 2;
+    let pk_offset = u16::from_le_bytes([data[1], data[2]]) as usize;
+    let sig_offset = u16::from_le_bytes([data[3], data[4]]) as usize;
+    let msg_offset = u16::from_le_bytes([data[5], data[6]]) as usize;
+    let msg_len = u16::from_le_bytes([data[7], data[8]]) as usize;
 
-    // Verify offsets are reasonable
+    // Verify boundaries
     require!(
-        pk_offset + 32 <= instruction_data.len(),
-        GuardianError::InvalidEd25519Instruction
-    );
-    require!(
-        sig_offset + 64 <= instruction_data.len(),
-        GuardianError::InvalidEd25519Instruction
-    );
-    require!(
-        msg_offset + msg_len <= instruction_data.len(),
-        GuardianError::InvalidEd25519Instruction
-    );
-    require!(
-        msg_len == 32,
+        pk_offset + 32 <= data.len()
+            && sig_offset + 64 <= data.len()
+            && msg_offset + msg_len <= data.len()
+            && msg_len == 32,
         GuardianError::InvalidEd25519Instruction
     );
 
-    // Extract public key, signature, and message from instruction data
-    let instr_pubkey = &instruction_data[pk_offset..pk_offset + 32];
-    let instr_signature = &instruction_data[sig_offset..sig_offset + 64];
-    let instr_message = &instruction_data[msg_offset..msg_offset + 32];
+    // Extract components
+    let instr_pubkey = &data[pk_offset..pk_offset + 32];
+    let instr_signature = &data[sig_offset..sig_offset + 64];
+    let instr_message = &data[msg_offset..msg_offset + 32];
 
-    // Verify public key matches AI authority
+    // Verify all match
     require!(
         instr_pubkey == ai_authority.as_ref(),
         GuardianError::EdPubkeyMismatch
     );
-    msg!("✓ Ed25519 public key matches AI authority");
+    msg!("✓ Ed25519 public key matches");
 
-    // Verify signature matches
     require!(
         instr_signature == signature,
         GuardianError::EdSignatureMismatch
     );
     msg!("✓ Ed25519 signature matches");
 
-    // Verify message (hash) matches
     let decision_hash = compute_decision_hash(decision_data)?;
     require!(
         instr_message == decision_hash.as_slice(),
         GuardianError::EdMessageMismatch
     );
-    msg!("✓ Ed25519 message (decision hash) matches");
+    msg!("✓ Ed25519 message matches");
 
-    msg!("✅ Ed25519 instruction verified successfully");
+    msg!("✅ Ed25519 instruction verified");
     Ok(())
 }
 
@@ -570,7 +577,7 @@ pub struct DecisionPackage {
     pub nonce: u64,
     
     /// Unix timestamp when decision expires
-    pub expiry_timestamp: i64,
+    pub expiry_timestamp: u64,
     
     /// For DELAY: seconds to wait before execution (max 7 days)
     pub delay_seconds: i64,
@@ -629,8 +636,17 @@ impl DelayedTx {
 // CONTEXT STRUCTS
 // ============================================================================
 
-#[derive(Accounts)]
-#[instruction(decision_data: DecisionPackage, signature: [u8; 64])]
+    #[derive(Accounts)]
+    #[instruction(
+        decision: u8,
+        amount: u64,
+        recipient: Pubkey,
+        nonce: u64,
+        expiry_timestamp: u64,
+        delay_seconds: i64,
+        partial_amount: u64,
+        signature: [u8; 64]
+    )]
 pub struct ExecuteWithVerifiedDecision<'info> {
     /// The user executing the transaction
     #[account(mut)]
@@ -657,7 +673,7 @@ pub struct ExecuteWithVerifiedDecision<'info> {
         init_if_needed,
         payer = signer,
         space = 8 + NonceTracker::LEN,
-        seeds = [b"nonce", signer.key().as_ref(), decision_data.nonce.to_le_bytes().as_ref()],
+        seeds = [b"nonce", signer.key().as_ref(), nonce.to_le_bytes().as_ref()],
         bump
     )]
     pub nonce_pda: Account<'info, NonceTracker>,
@@ -667,7 +683,7 @@ pub struct ExecuteWithVerifiedDecision<'info> {
         init_if_needed,
         payer = signer,
         space = 8 + DelayedTx::LEN,
-        seeds = [b"delayed", signer.key().as_ref(), decision_data.recipient.as_ref(), decision_data.nonce.to_le_bytes().as_ref()],
+        seeds = [b"delayed", signer.key().as_ref(), recipient.key().as_ref(), nonce.to_le_bytes().as_ref()],
         bump
     )]
     pub delayed_tx: Account<'info, DelayedTx>,
