@@ -6,7 +6,8 @@
   "scripts": {
     "test": "anchor test",
     "build": "anchor build",
-    "deploy": "anchor deploy"
+    "deploy": "anchor deploy",
+    "test:devnet-integration": "ts-node tests/devnet-integration.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",

@@ -401,25 +401,34 @@ fn verify_ed25519_instruction_exists(
         GuardianError::InvalidEd25519Instruction
     );
 
-    // Ed25519 instruction data format (for verifying a single signature):
+    // Ed25519 instruction data format produced by @solana/web3.js:
     // [0] = num_signatures (1 byte) = 1
-    // [1] = public key offset (2 bytes LE)
-    // [3] = signature offset (2 bytes LE)
-    // [5] = message offset (2 bytes LE)
-    // [7] = message length (2 bytes LE)
+    // [1] = padding (1 byte)
+    // [2..=3] = signature offset (u16 LE)
+    // [4..=5] = signature instruction index (u16 LE)
+    // [6..=7] = public key offset (u16 LE)
+    // [8..=9] = public key instruction index (u16 LE)
+    // [10..=11] = message offset (u16 LE)
+    // [12..=13] = message length (u16 LE)
+    // [14..=15] = message instruction index (u16 LE)
     // Followed by: pubkey (32 bytes) + signature (64 bytes) + message (32 bytes)
 
     let data = &ed25519_ix.data;
-    require!(data.len() >= 10, GuardianError::InvalidEd25519Instruction);
+    msg!("Ed25519 data len: {}", data.len());
+    require!(data.len() >= 16, GuardianError::InvalidEd25519Instruction);
+
+    msg!("Ed25519 raw header bytes: {:02x?}", &data[0..16]);
 
     // Parse header
     let num_sigs = data[0] as usize;
-    require!(num_sigs == 1, GuardianError::InvalidEd25519Instruction);
+    let sig_offset = u16::from_le_bytes([data[2], data[3]]) as usize;
+    let pk_offset = u16::from_le_bytes([data[6], data[7]]) as usize;
+    let msg_offset = u16::from_le_bytes([data[10], data[11]]) as usize;
+    let msg_len = u16::from_le_bytes([data[12], data[13]]) as usize;
 
-    let pk_offset = u16::from_le_bytes([data[1], data[2]]) as usize;
-    let sig_offset = u16::from_le_bytes([data[3], data[4]]) as usize;
-    let msg_offset = u16::from_le_bytes([data[5], data[6]]) as usize;
-    let msg_len = u16::from_le_bytes([data[7], data[8]]) as usize;
+    msg!("Ed25519 offsets pk={}, sig={}, msg={}, len={}, sigs={}", pk_offset, sig_offset, msg_offset, msg_len, num_sigs);
+
+    require!(num_sigs == 1, GuardianError::InvalidEd25519Instruction);
 
     // Verify boundaries
     require!(
